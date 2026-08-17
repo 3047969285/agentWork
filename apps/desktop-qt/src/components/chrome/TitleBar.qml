@@ -1,5 +1,6 @@
 import QtQuick
 import dsh
+import "qrc:/dsh/src/components/ink" as InkComp
 
 Item {
     id: root
@@ -30,6 +31,15 @@ Item {
         }
     }
 
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 1
+        color: InkTokens.ink100
+        opacity: 0.6
+    }
+
     MouseArea {
         anchors.fill: parent
         onClicked: function (mouse) {
@@ -55,6 +65,6 @@ Item {
 
     Component {
         id: bloomComponent
-        InkBloom {}
+        InkComp.InkBloom {}
     }
 }

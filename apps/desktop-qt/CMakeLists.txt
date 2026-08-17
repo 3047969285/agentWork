@@ -10,6 +10,9 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 Network Test)
 
 qt_add_executable(dsh-desktop
   src/main.cpp
+  src/app/Application.cpp
+  src/app/WindowController.cpp
+  src/hooks/ConnectionHook.cpp
   src/services/host/HostProcess.cpp
 )
 

@@ -1,11 +1,15 @@
 #include <QGuiApplication>
-#include <QQmlApplicationEngine>
+#include <QQuickStyle>
+
+#include "app/Application.h"
 
 int main(int argc, char *argv[]) {
+  QQuickStyle::setStyle(QStringLiteral("Basic"));
   QGuiApplication app(argc, argv);
-  QQmlApplicationEngine engine;
-  engine.loadFromModule("dsh", "Main");
-  if (engine.rootObjects().isEmpty())
+  Application dshApp;
+  if (!dshApp.init()) {
     return 1;
+  }
+  dshApp.start();
   return app.exec();
 }

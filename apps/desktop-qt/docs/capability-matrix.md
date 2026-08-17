@@ -2,11 +2,11 @@
 
 | id | web-anchor | qt-target | rpc-methods | milestone | status | verify |
 |---|---|---|---|---|---|---|
-| desktop.shell.window | apps/web | pages/shell/MainShell.qml | — | M1 | wip | 窗口可见 |
+| desktop.shell.window | apps/web | pages/shell/MainShell.qml | — | M1 | done | 窗口可见，展示水墨主壳与动态连接状态 |
 | desktop.host.spawn | — | services/host/HostProcess | — | M1 | done | 子进程存在且回环监听（tst_host_args + live 启动均通过） |
-| desktop.rpc.host_describe | connection | services/rpc/RpcClient | host.describe | M1 | wip | RpcClient 单测通过；UI 接线待 Task 6 |
-| desktop.ink.tokens | ui-theme | styles/tokens/InkTokens.qml | — | M1 | wip | 浅/深切换 |
-| desktop.ink.motion_reduce | — | styles/motion/MotionBudget.qml | — | M1 | wip | 开关关闭墨晕 |
+| desktop.rpc.host_describe | connection | services/rpc/RpcClient | host.describe | M1 | done | RpcClient 单测通过；HostProcess 联动解析端口并完成握手展示 |
+| desktop.ink.tokens | ui-theme | styles/tokens/InkTokens.qml | — | M1 | done | 水墨色系 Token 体系完整，宣纸质感底色与主辅文字色适配 |
+| desktop.ink.motion_reduce | — | styles/motion/MotionBudget.qml | — | M1 | done | 开关切换 reduceMotion 即时禁用 InkBloom 动效 |
 | ui-layout | ui-layout | pages/* | — | M2 | todo | — |
 | ui-sidebar | ui-sidebar | pages/session | — | M2 | todo | — |
 | ui-workspace | ui-workspace | pages/workspace | — | M2 | todo | — |
@@ -35,7 +35,7 @@
 | ui-skill | ui-skill | — | — | M5 | todo | — |
 | ui-slots | ui-slots | — | — | M5 | todo | — |
 | ui-subagent | ui-subagent | — | — | M5 | todo | — |
-| ui-theme | ui-theme | styles/themes | — | M1 | wip | 水墨浅/深 |
+| ui-theme | ui-theme | styles/themes | — | M1 | done | 水墨浅色主题激活（InkLight）；InkTokens 提供基础调色板 |
 | ui-trajectory | ui-trajectory | — | — | M5 | todo | — |
 | ui-workflow-run | ui-workflow-run | — | — | M5 | todo | — |
 | web.pwa | apps/web manifest | — | — | — | waived | Web 专有，不移植 |

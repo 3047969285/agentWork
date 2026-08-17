@@ -64,6 +64,7 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         model: (typeof study !== "undefined") ? study.modelOptions : []
         delegate: Item {
+            required property var modelData
             width: modelList.width
             height: 26
             Text {
@@ -98,6 +99,7 @@ Item {
         font.family: InkTokens.calligraphyFamily
         font.pixelSize: 15
         color: InkTokens.ink900
+        placeholderTextColor: InkTokens.ink300
         enabled: typeof connection !== "undefined" && connection.connected
                  && typeof study !== "undefined" && study.selectedSessionId.length > 0
         background: Item {}

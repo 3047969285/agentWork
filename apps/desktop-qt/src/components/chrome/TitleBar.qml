@@ -17,9 +17,29 @@ Item {
             id: brand
             text: qsTr("深卷")
             font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 22
+            font.pixelSize: 24
             color: InkTokens.primaryText
             anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Rectangle {
+            id: chop
+            width: 18
+            height: 18
+            radius: 1
+            rotation: 7
+            anchors.verticalCenter: parent.verticalCenter
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.rgba(0.651, 0.239, 0.184, 0.7)
+            Text {
+                anchors.centerIn: parent
+                rotation: -7
+                text: qsTr("卷")
+                font.family: InkTokens.calligraphyFamily
+                font.pixelSize: 11
+                color: InkTokens.cinnabar
+            }
         }
 
         Rectangle {

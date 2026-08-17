@@ -3,7 +3,13 @@ import QtQuick
 Item {
     id: root
     width: parent ? parent.width : 240
-    height: Math.max(52, body.implicitHeight + 16)
+    implicitHeight: Math.max(52, body.implicitHeight + 18)
+    height: implicitHeight
+
+    required property string title
+    required property string bodyText
+    required property string status
+    required property string card
 
     Rectangle {
         anchors.fill: parent
@@ -13,15 +19,16 @@ Item {
         radius: 1
     }
 
-    Rectangle {
-        width: 3
-        height: 14
-        color: InkTokens.ink700
-        opacity: 0.55
-        anchors.left: parent.left
-        anchors.leftMargin: 10
-        anchors.top: parent.top
-        anchors.topMargin: 14
+    Repeater {
+        model: 3
+        Rectangle {
+            width: 1
+            height: Math.max(12, root.height - 20)
+            color: InkTokens.cinnabar
+            opacity: 0.18 - index * 0.04
+            x: 10 + index * 3
+            y: 10
+        }
     }
 
     Column {
@@ -29,7 +36,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.leftMargin: 20
+        anchors.leftMargin: 24
         anchors.rightMargin: 12
         anchors.topMargin: 10
         spacing: 4
@@ -54,6 +61,7 @@ Item {
             width: parent.width
             visible: bodyText.length > 0
             text: bodyText
+            textFormat: Text.PlainText
             wrapMode: Text.Wrap
             maximumLineCount: card === "terminal" ? 12 : 6
             elide: Text.ElideRight
@@ -63,9 +71,4 @@ Item {
             color: InkTokens.ink700
         }
     }
-
-    required property string title
-    required property string bodyText
-    required property string status
-    required property string card
 }

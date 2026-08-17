@@ -13,55 +13,90 @@ Item {
         opacity: 0.35
     }
 
+    Text {
+        id: scrollTitle
+        visible: root.hasSession
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.topMargin: 10
+        anchors.leftMargin: 32
+        anchors.rightMargin: 32
+        height: visible ? 22 : 0
+        text: (typeof study !== "undefined") ? study.selectedTitle : ""
+        font.family: InkTokens.calligraphyFamily
+        font.pixelSize: 13
+        color: InkTokens.ink500
+        elide: Text.ElideRight
+        opacity: 0.85
+    }
+
     ListView {
         id: transcript
         visible: !root.empty
-        anchors.fill: parent
+        anchors.top: scrollTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
         anchors.margins: 28
+        anchors.topMargin: scrollTitle.visible ? 4 : 28
         clip: true
         spacing: 18
         reuseItems: true
         cacheBuffer: 420
         pixelAligned: true
         boundsBehavior: Flickable.StopAtBounds
+        flickDeceleration: 2500
         model: (typeof study !== "undefined") ? study.transcript : []
 
         delegate: Item {
+            id: rowRoot
+            required property string kind
+            required property string role
+            required property string text
+            required property string title
+            required property string body
+            required property string status
+            required property string card
+            required property bool streaming
+
             width: transcript.width
-            height: model.kind === "tool" ? toolCard.height : textCol.height
+            height: kind === "tool" ? toolCard.height : textCol.height
 
             ToolCard {
                 id: toolCard
-                visible: model.kind === "tool"
+                visible: rowRoot.kind === "tool"
                 width: parent.width * 0.92
-                title: model.title ? model.title : ""
-                bodyText: model.body ? model.body : ""
-                status: model.status ? model.status : ""
-                card: model.card ? model.card : "generic"
+                height: visible ? implicitHeight : 0
+                title: rowRoot.title
+                bodyText: rowRoot.body
+                status: rowRoot.status
+                card: rowRoot.card.length > 0 ? rowRoot.card : "generic"
             }
 
             Column {
                 id: textCol
-                visible: model.kind !== "tool"
+                visible: rowRoot.kind !== "tool"
                 width: parent.width
                 spacing: 6
 
                 Text {
-                    text: model.role === "user" ? qsTr("问") : qsTr("答")
+                    text: rowRoot.role === "user" ? qsTr("问") : qsTr("答")
                     font.family: InkTokens.calligraphyFamily
                     font.pixelSize: 11
-                    color: model.role === "user" ? InkTokens.cinnabar : InkTokens.ink500
+                    color: rowRoot.role === "user" ? InkTokens.cinnabar : InkTokens.ink500
                 }
 
                 Text {
                     width: parent.width * 0.92
-                    text: model.text ? model.text : ""
+                    text: rowRoot.text
+                    textFormat: Text.PlainText
                     wrapMode: Text.Wrap
                     font.family: InkTokens.calligraphyFamily
                     font.pixelSize: 15
                     lineHeight: 1.45
                     color: InkTokens.ink900
-                    opacity: model.streaming ? 0.82 : 1
+                    opacity: rowRoot.streaming ? 0.82 : 1
                 }
             }
         }
@@ -71,13 +106,17 @@ Item {
                 return
             stickToEnd = atYEnd
         }
-        onCountChanged: {
-            if (stickToEnd && count > 0)
-                positionViewAtEnd()
-        }
-        onContentHeightChanged: {
-            if (stickToEnd)
-                positionViewAtEnd()
+        onCountChanged: stickTimer.restart()
+        onContentHeightChanged: stickTimer.restart()
+    }
+
+    Timer {
+        id: stickTimer
+        interval: 16
+        repeat: false
+        onTriggered: {
+            if (root.stickToEnd && transcript.count > 0)
+                transcript.positionViewAtEnd()
         }
     }
 

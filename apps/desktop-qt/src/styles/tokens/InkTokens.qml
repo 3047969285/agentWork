@@ -13,7 +13,7 @@ QtObject {
     readonly property color sidebarWash: "#F1E6D4"
     readonly property color scrollPaper: "#F8F3E8"
     readonly property color hairline: "#C9B89A"
-    readonly property string calligraphyFamily: Qt.platform.os === "windows" ? "SimSun" : "serif"
+    readonly property string calligraphyFamily: Qt.platform.os === "windows" ? "KaiTi" : "serif"
     property bool dark: false
     readonly property color windowBg: dark ? ink900 : ink0
     readonly property color primaryText: dark ? ink100 : ink900

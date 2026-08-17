@@ -16,7 +16,7 @@ M1 的 Qt 壳在 `host.describe` 成功后，把连接段落、版本、端口�
 
 工作区切换是客户端按 `workspace.list` 的 `sessionIds` 过滤（没有 `workspace.select` RPC）。模型选择走 `session.models` 与 `session.selectModel`。审批与问答通过 `POST /api/respond` 回传 `client-response`，rpcId 回声 mux 帧。设置「册」调用 `settings.describe` 与 `settings.openDocument`。
 
-直播助手文本是 mux 上的 `assistant/chunk` `text-delta`，用 16 ms 定时器刷进 `TranscriptModel`（单行 `dataChanged`，不整表重置）。`session.history` 是重连基线。会话与卷轴 `ListView` 使用 `reuseItems` 与 `cacheBuffer`。InkBloom 只出现在标题与空卷。本套 Qt 前缀没有 WebSockets 模块，`EventStream` 在 `QTcpSocket` 上实现 RFC 6455。
+直播助手文本是 mux 上的 `assistant/chunk` `text-delta`，用 16 ms 定时器刷进 `TranscriptModel`（单行 `dataChanged`，不整表重置）。`session.history` 是重连基线。会话与卷轴 `ListView` 使用 `reuseItems`、`cacheBuffer` 与 required-property 委托。贴底滚动按 16 ms 合并。InkBloom 只出现在标题与空卷。本套 Qt 前缀没有 WebSockets 模块，`EventStream` 在 `QTcpSocket` 上实现 RFC 6455。卷轴上沿以 `selectedTitle` 作题签。
 
 `utils/StudyJson` 里的 `dsh::study` 解析标题、列表行、工具帖与 prompt JSON，QML 只负责呈现。宣纸渐变停在宣纸色相上，只改变透明度；`PaperBackground` 把纤维笔触缓存绘制一次，不画在列表委托上。
 

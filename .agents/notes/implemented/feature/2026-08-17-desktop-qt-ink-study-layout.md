@@ -16,7 +16,7 @@ Connection state is a small rotated ink seal in `TitleBar` plus inline `statusTe
 
 Workspace switching is a client-side filter of `workspace.list` items by `sessionIds` (there is no `workspace.select` RPC). Model choice uses `session.models` and `session.selectModel`. Approvals and questions answer through `POST /api/respond` with a `client-response` envelope echoing the mux frame's `rpcId`. Settings `册` calls `settings.describe` and `settings.openDocument`.
 
-Live assistant text is `assistant/chunk` `text-delta` on the mux stream, flushed on a 16 ms timer into `TranscriptModel` (`dataChanged` on one row, not a model reset). `session.history` is the reconnect baseline. Session and transcript `ListView`s use `reuseItems` and `cacheBuffer`. InkBloom is title/empty-scroll only. Qt has no WebSockets module in this prefix, so `EventStream` speaks RFC 6455 over `QTcpSocket`.
+Live assistant text is `assistant/chunk` `text-delta` on the mux stream, flushed on a 16 ms timer into `TranscriptModel` (`dataChanged` on one row, not a model reset). `session.history` is the reconnect baseline. Session and transcript `ListView`s use `reuseItems`, `cacheBuffer`, and required-property delegates. Scroll-to-end coalesces on a 16 ms timer. InkBloom is title/empty-scroll only. Qt has no WebSockets module in this prefix, so `EventStream` speaks RFC 6455 over `QTcpSocket`. The scroll shows `selectedTitle` as a 题签.
 
 `dsh::study` parsers in `utils/StudyJson` own title, row, tool-card, and prompt JSON so QML stays presentation-only. Paper gradients keep the xuan-paper hue and vary only alpha; `PaperBackground` paints cached fiber strokes once, never on list delegates.
 

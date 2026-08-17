@@ -36,6 +36,7 @@ Item {
         renderStrategy: Canvas.Cooperative
         layer.enabled: true
         layer.smooth: false
+        layer.mipmap: false
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
         onPaint: {

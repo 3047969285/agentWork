@@ -81,6 +81,9 @@ class EventStream::Downlink : public QObject {
     req += "Host: ";
     req += host;
     req += "\r\n";
+    req += "Origin: http://";
+    req += host;
+    req += "\r\n";
     req += "Upgrade: websocket\r\n";
     req += "Connection: Upgrade\r\n";
     req += "Sec-WebSocket-Key: ";

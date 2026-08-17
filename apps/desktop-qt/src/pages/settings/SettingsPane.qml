@@ -74,6 +74,7 @@ Item {
             boundsBehavior: Flickable.StopAtBounds
             model: (typeof study !== "undefined") ? study.settingsNamespaces : []
             delegate: Item {
+                required property var modelData
                 width: nsList.width
                 height: 36
                 Text {

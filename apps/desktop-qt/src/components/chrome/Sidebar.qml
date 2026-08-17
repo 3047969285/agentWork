@@ -69,6 +69,7 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         model: (typeof study !== "undefined") ? study.workspaces : []
         delegate: Item {
+            required property var modelData
             width: workspaceList.width
             height: 28
             Text {
@@ -113,6 +114,9 @@ Item {
 
         delegate: Item {
             id: rowRoot
+            required property string sessionId
+            required property string title
+            required property bool running
             width: sessionList.width
             height: 36
 

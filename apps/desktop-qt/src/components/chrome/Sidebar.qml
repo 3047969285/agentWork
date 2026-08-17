@@ -1,5 +1,4 @@
 import QtQuick
-import dsh
 
 Item {
     id: root

@@ -20,7 +20,7 @@ bool WindowController::init(ConnectionHook *connectionHook, StudyHook *studyHook
   if (studyHook != nullptr) {
     m_engine->rootContext()->setContextProperty(QStringLiteral("study"), studyHook);
   }
-  m_engine->load(QUrl(QStringLiteral("qrc:/dsh/src/qml/Main.qml")));
+  m_engine->loadFromModule(QLatin1String("dsh"), QLatin1String("Main"));
   return !m_engine->rootObjects().isEmpty();
 }
 

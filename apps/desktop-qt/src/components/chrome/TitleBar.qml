@@ -1,6 +1,4 @@
 import QtQuick
-import dsh
-import "qrc:/dsh/src/components/ink" as InkComp
 
 Item {
     id: root
@@ -125,6 +123,6 @@ Item {
 
     Component {
         id: bloomComponent
-        InkComp.InkBloom {}
+        InkBloom {}
     }
 }

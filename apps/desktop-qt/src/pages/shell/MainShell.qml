@@ -1,24 +1,20 @@
 import QtQuick
-import dsh
-import "qrc:/dsh/src/components/ink" as InkComp
-import "qrc:/dsh/src/components/chrome" as ChromeComp
-import "qrc:/dsh/src/components/chat" as ChatComp
 
 Item {
     id: root
 
-    InkComp.PaperBackground {
+    PaperBackground {
         anchors.fill: parent
     }
 
-    ChromeComp.TitleBar {
+    TitleBar {
         id: titleBar
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
     }
 
-    ChromeComp.Sidebar {
+    Sidebar {
         id: sidebar
         anchors.top: titleBar.bottom
         anchors.left: parent.left
@@ -50,7 +46,7 @@ Item {
         }
     }
 
-    ChatComp.ConversationPane {
+    ConversationPane {
         id: scroll
         anchors.top: inlineStatus.visible ? inlineStatus.bottom : titleBar.bottom
         anchors.left: sidebar.right
@@ -58,7 +54,7 @@ Item {
         anchors.bottom: composer.top
     }
 
-    ChatComp.Composer {
+    Composer {
         id: composer
         anchors.left: sidebar.right
         anchors.right: parent.right

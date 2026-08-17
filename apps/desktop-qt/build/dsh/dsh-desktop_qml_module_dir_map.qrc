@@ -1,6 +1,0 @@
-<RCC>
-  <qresource prefix="/">
-    <file alias="/dsh">D:/mavenooo/deepseek-harness/apps/desktop-qt/build/dsh</file>
-
-  </qresource>
-</RCC>

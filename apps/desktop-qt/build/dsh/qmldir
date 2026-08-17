@@ -1,5 +1,0 @@
-module dsh
-typeinfo dsh-desktop.qmltypes
-prefer :/dsh/
-Main 1.0 src/qml/Main.qml
-

@@ -34,3 +34,8 @@ qt_add_qml_module(dsh-desktop
 )
 
 target_link_libraries(dsh-desktop PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network)
+
+# --- rpc sources added by Task 5 agent ---
+include(cmake/RpcSources.cmake)
+
+enable_testing()

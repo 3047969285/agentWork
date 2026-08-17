@@ -42,7 +42,7 @@ Item {
 
         Text {
             id: statusInline
-            width: Math.min(320, root.width - 160)
+            width: Math.min(280, root.width - 220)
             elide: Text.ElideRight
             text: (typeof connection !== "undefined") ? connection.statusText : qsTr("候墨")
             font.family: InkTokens.calligraphyFamily
@@ -94,21 +94,50 @@ Item {
         }
     }
 
-    Text {
-        id: reduceLabel
+    Row {
         anchors.right: parent.right
         anchors.rightMargin: 18
         anchors.verticalCenter: parent.verticalCenter
-        text: MotionBudget.reduceMotion ? qsTr("静") : qsTr("动")
-        font.family: InkTokens.calligraphyFamily
-        font.pixelSize: 13
-        color: InkTokens.ink500
+        spacing: 16
 
-        MouseArea {
-            anchors.fill: parent
-            anchors.margins: -8
-            cursorShape: Qt.PointingHandCursor
-            onClicked: MotionBudget.reduceMotion = !MotionBudget.reduceMotion
+        Text {
+            text: qsTr("册")
+            font.family: InkTokens.calligraphyFamily
+            font.pixelSize: 13
+            color: InkTokens.ink500
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -8
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (typeof study !== "undefined")
+                        study.openSettings()
+                }
+            }
+        }
+
+        Text {
+            id: reduceLabel
+            text: MotionBudget.reduceMotion ? qsTr("静") : qsTr("动")
+            font.family: InkTokens.calligraphyFamily
+            font.pixelSize: 13
+            color: InkTokens.ink500
+            MouseArea {
+                id: reduceHit
+                anchors.fill: parent
+                anchors.margins: -8
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+                onClicked: MotionBudget.reduceMotion = !MotionBudget.reduceMotion
+            }
+        }
+
+        Text {
+            visible: reduceHit.containsMouse
+            text: MotionBudget.reduceMotion ? qsTr("已减动效") : qsTr("减少动态效果")
+            font.family: InkTokens.calligraphyFamily
+            font.pixelSize: 11
+            color: InkTokens.ink300
         }
     }
 

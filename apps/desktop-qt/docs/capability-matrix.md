@@ -7,17 +7,17 @@
 | desktop.rpc.host_describe | connection | services/rpc/RpcClient | host.describe | M1 | done | RpcClient 单测通过；HostProcess 联动解析端口并完成握手展示 |
 | desktop.ink.tokens | ui-theme | styles/tokens/InkTokens.qml | — | M1 | done | 水墨色系 Token 体系完整，宣纸质感底色与主辅文字色适配 |
 | desktop.ink.motion_reduce | — | styles/motion/MotionBudget.qml | — | M1 | done | 开关切换 reduceMotion 即时禁用 InkBloom 动效 |
-| ui-layout | ui-layout | pages/shell/MainShell.qml | — | M2 | wip | 书房三栏：侧栏、卷轴、输入 |
-| ui-sidebar | ui-sidebar | components/chrome/Sidebar.qml | session.list, session.create | M2 | wip | 会话列表与新会话 |
-| ui-workspace | ui-workspace | components/chrome/Sidebar.qml | workspace.list | M2 | wip | 展示当前工作区名；尚未切换工作区 |
-| ui-conversation | ui-conversation | components/chat/ConversationPane.qml | session.history, session.prompt | M2 | wip | 空卷留白；历史文本；prompt 后轮询 |
-| ui-model-selection | ui-model-selection | components/chat | — | M2 | todo | — |
-| ui-tool | ui-tool | — | — | M3 | todo | — |
-| ui-permission-presets | ui-permission-presets | — | — | M3 | todo | — |
-| ui-user-questions | ui-user-questions | — | — | M3 | todo | — |
-| ui-settings | ui-settings | pages/settings | — | M4 | todo | — |
-| ui-settings-general | ui-settings-general | pages/settings | — | M4 | todo | — |
-| ui-settings-models | ui-settings-models | pages/settings | — | M4 | todo | — |
+| ui-layout | ui-layout | pages/shell/MainShell.qml | — | M2 | done | 书房三栏：侧栏、卷轴、输入；权限/问答条与设置册叠在壳内 |
+| ui-sidebar | ui-sidebar | components/chrome/Sidebar.qml | session.list, session.create | M2 | done | ListView reuseItems；会话列表与新会话 |
+| ui-workspace | ui-workspace | components/chrome/Sidebar.qml | workspace.list | M2 | done | 点工作区名切换；按 sessionIds 过滤，无假成功 |
+| ui-conversation | ui-conversation | components/chat/ConversationPane.qml | session.history, session.prompt, events.mux | M2 | done | 历史折页；mux 流式 chunk 按帧合并；reuseItems |
+| ui-model-selection | ui-model-selection | components/chat/Composer.qml | session.models, session.selectModel | M2 | done | 输入区模型名展开目录后选择 |
+| ui-tool | ui-tool | components/chat/ToolCard.qml | session.history view, events.mux | M3 | done | generic/terminal 等 card 字段的水墨帖 |
+| ui-permission-presets | ui-permission-presets | components/chat/ApprovalStrip.qml | events.mux approval, /api/respond | M3 | done | 卷轴下沿允/却，无系统对话框 |
+| ui-user-questions | ui-user-questions | components/chat/QuestionStrip.qml | events.mux question, /api/respond | M3 | done | 选项或书答，整批 respond |
+| ui-settings | ui-settings | pages/settings/SettingsPane.qml | settings.describe, settings.openDocument | M4 | done | 标题「册」打开内嵌一览 |
+| ui-settings-general | ui-settings-general | pages/settings/SettingsPane.qml | settings.describe | M4 | wip | 列出命名空间；表单编辑未做 |
+| ui-settings-models | ui-settings-models | pages/settings | — | M4 | todo | 模型设置仍走会话模型芯片 |
 | ui-settings-plugins | ui-settings-plugins | pages/settings | — | M4 | todo | — |
 | ui-settings-plugin-inventory | ui-settings-plugin-inventory | pages/settings | — | M4 | todo | — |
 | ui-agent-preset | ui-agent-preset | — | — | M5 | todo | — |

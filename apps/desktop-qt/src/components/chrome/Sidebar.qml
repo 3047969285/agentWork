@@ -4,6 +4,8 @@ Item {
     id: root
     width: 228
 
+    property bool workspaceOpen: false
+
     Rectangle {
         anchors.fill: parent
         color: InkTokens.sidebarWash
@@ -28,24 +30,83 @@ Item {
         }
 
         Text {
+            id: workspaceName
             width: parent.width
             text: (typeof study !== "undefined") ? study.workspaceTitle : qsTr("未入席")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 18
             color: InkTokens.primaryText
             elide: Text.ElideMiddle
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+                onClicked: root.workspaceOpen = !root.workspaceOpen
+                onContainsMouseChanged: {
+                    if (MotionBudget.hoverMs === 0)
+                        return
+                    workspaceName.opacity = containsMouse ? 0.72 : 1
+                }
+            }
+            Behavior on opacity {
+                enabled: MotionBudget.hoverMs > 0
+                NumberAnimation { duration: MotionBudget.hoverMs }
+            }
+        }
+    }
+
+    ListView {
+        id: workspaceList
+        visible: root.workspaceOpen
+        anchors.top: head.bottom
+        anchors.topMargin: 8
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: visible ? Math.min(120, count * 28) : 0
+        clip: true
+        reuseItems: true
+        cacheBuffer: 80
+        boundsBehavior: Flickable.StopAtBounds
+        model: (typeof study !== "undefined") ? study.workspaces : []
+        delegate: Item {
+            width: workspaceList.width
+            height: 28
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 22
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                text: modelData.title
+                font.family: InkTokens.calligraphyFamily
+                font.pixelSize: 13
+                color: (typeof study !== "undefined" && study.workspaceId === modelData.workspaceId)
+                       ? InkTokens.cinnabar : InkTokens.ink700
+                elide: Text.ElideRight
+            }
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    study.selectWorkspace(modelData.workspaceId)
+                    root.workspaceOpen = false
+                }
+            }
         }
     }
 
     ListView {
         id: sessionList
-        anchors.top: head.bottom
+        anchors.top: workspaceList.visible ? workspaceList.bottom : head.bottom
         anchors.topMargin: 14
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: newSessionBtn.top
         anchors.bottomMargin: 10
         clip: true
+        reuseItems: true
+        cacheBuffer: 280
+        pixelAligned: true
         boundsBehavior: Flickable.StopAtBounds
         spacing: 2
         model: (typeof study !== "undefined") ? study.sessions : []
@@ -56,9 +117,10 @@ Item {
             height: 36
 
             readonly property bool selected: typeof study !== "undefined"
-                                             && study.selectedSessionId === modelData.sessionId
+                                             && study.selectedSessionId === sessionId
 
             Rectangle {
+                id: wash
                 anchors.fill: parent
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
@@ -66,6 +128,10 @@ Item {
                 border.width: rowRoot.selected ? 1 : 0
                 border.color: Qt.rgba(0.651, 0.239, 0.184, 0.45)
                 radius: 1
+                Behavior on color {
+                    enabled: MotionBudget.hoverMs > 0
+                    ColorAnimation { duration: MotionBudget.hoverMs }
+                }
             }
 
             Rectangle {
@@ -79,13 +145,25 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
+            Rectangle {
+                visible: running
+                width: 5
+                height: 5
+                radius: 1
+                rotation: 12
+                color: InkTokens.ink900
+                anchors.right: parent.right
+                anchors.rightMargin: 16
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: 24
                 anchors.right: parent.right
-                anchors.rightMargin: 16
-                text: modelData.title
+                anchors.rightMargin: 22
+                text: title
                 font.family: InkTokens.calligraphyFamily
                 font.pixelSize: 14
                 color: rowRoot.selected ? InkTokens.ink900 : InkTokens.ink700
@@ -95,9 +173,15 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
                 onClicked: {
                     if (typeof study !== "undefined")
-                        study.selectSession(modelData.sessionId)
+                        study.selectSession(sessionId)
+                }
+                onContainsMouseChanged: {
+                    if (rowRoot.selected || MotionBudget.hoverMs === 0)
+                        return
+                    wash.color = containsMouse ? Qt.rgba(0.651, 0.239, 0.184, 0.05) : "transparent"
                 }
             }
         }
@@ -124,15 +208,22 @@ Item {
         font.family: InkTokens.calligraphyFamily
         font.pixelSize: 14
         color: InkTokens.cinnabar
+        opacity: 1
 
         MouseArea {
             anchors.fill: parent
             anchors.margins: -8
             cursorShape: Qt.PointingHandCursor
+            hoverEnabled: true
             onClicked: {
                 if (typeof study !== "undefined")
                     study.createSession()
             }
+            onPressedChanged: newSessionBtn.opacity = pressed ? 0.55 : 1
+        }
+        Behavior on opacity {
+            enabled: MotionBudget.pressMs > 0
+            NumberAnimation { duration: MotionBudget.pressMs }
         }
     }
 

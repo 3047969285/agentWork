@@ -17,7 +17,10 @@ qt_add_executable(dsh-desktop
   src/hooks/ConnectionHook.cpp
   src/hooks/StudyHook.cpp
   src/utils/StudyJson.cpp
+  src/models/SessionListModel.cpp
+  src/models/TranscriptModel.cpp
   src/services/host/HostProcess.cpp
+  src/services/rpc/EventStream.cpp
 )
 
 target_include_directories(dsh-desktop PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -43,7 +46,11 @@ qt_add_qml_module(dsh-desktop
     src/components/chrome/Sidebar.qml
     src/components/chat/ConversationPane.qml
     src/components/chat/Composer.qml
+    src/components/chat/ToolCard.qml
+    src/components/chat/ApprovalStrip.qml
+    src/components/chat/QuestionStrip.qml
     src/pages/shell/MainShell.qml
+    src/pages/settings/SettingsPane.qml
 )
 
 target_link_libraries(dsh-desktop PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network)
@@ -77,6 +84,7 @@ add_test(NAME tst_host_args COMMAND tst_host_args)
 qt_add_executable(tst_study_json
   tests/tst_study_json.cpp
   src/utils/StudyJson.cpp
+  src/models/TranscriptModel.cpp
 )
 target_include_directories(tst_study_json PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(tst_study_json PRIVATE Qt6::Core Qt6::Test)

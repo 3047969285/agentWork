@@ -30,6 +30,17 @@ QJsonObject RpcClient::makeClientRequest(const QString &method, const QJsonValue
   return request;
 }
 
+QJsonObject RpcClient::makeClientResponse(const QString &rpcId, const QJsonValue &value) {
+  QJsonObject request;
+  request.insert(QString::fromLatin1(dsh::rpc::kFieldType), QString::fromLatin1(dsh::rpc::kClientResponseType));
+  request.insert(QString::fromLatin1(dsh::rpc::kFieldRpcId), rpcId);
+  QJsonObject result;
+  result.insert(QString::fromLatin1(dsh::rpc::kFieldOk), true);
+  result.insert(QString::fromLatin1(dsh::rpc::kFieldValue), value);
+  request.insert(QString::fromLatin1(dsh::rpc::kFieldResult), result);
+  return request;
+}
+
 bool RpcClient::parseServerResponse(const QJsonObject &response, const QString &expectedRpcId, bool *ok,
                                     QJsonValue *resultOrError, QString *errorMessage) {
   if (errorMessage != nullptr) {
@@ -134,5 +145,48 @@ void RpcClient::callUnary(const QString &method, const QJsonValue &payload,
     }
 
     done(businessOk, resultOrError);
+  });
+}
+
+void RpcClient::callRespond(const QString &rpcId, const QJsonValue &value,
+                            const std::function<void(bool accepted, QString reason)> &done) {
+  if (!m_baseUrl.isValid()) {
+    done(false, QStringLiteral("RpcClient base URL is not set"));
+    return;
+  }
+  if (rpcId.isEmpty()) {
+    done(false, QStringLiteral("missing rpcId"));
+    return;
+  }
+
+  const QJsonObject requestObject = makeClientResponse(rpcId, value);
+  const QUrl url = m_baseUrl.resolved(QUrl(QString::fromLatin1(dsh::rpc::kRespondPath)));
+
+  QNetworkRequest networkRequest(url);
+  networkRequest.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+
+  const QByteArray body = QJsonDocument(requestObject).toJson(QJsonDocument::Compact);
+  QNetworkReply *reply = m_network->post(networkRequest, body);
+
+  connect(reply, &QNetworkReply::finished, this, [reply, done]() {
+    reply->deleteLater();
+    if (reply->error() != QNetworkReply::NoError) {
+      done(false, reply->errorString());
+      return;
+    }
+    const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (statusCode < 200 || statusCode >= 300) {
+      done(false, QStringLiteral("HTTP %1").arg(statusCode));
+      return;
+    }
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+      done(false, QStringLiteral("invalid JSON response: %1").arg(parseError.errorString()));
+      return;
+    }
+    const QJsonObject receipt = document.object();
+    const bool accepted = receipt.value(QStringLiteral("accepted")).toBool();
+    done(accepted, accepted ? QString() : receipt.value(QStringLiteral("reason")).toString());
   });
 }

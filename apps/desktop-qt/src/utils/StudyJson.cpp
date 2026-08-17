@@ -2,6 +2,7 @@
 
 #include <QFileInfo>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -35,6 +36,38 @@ QString projectionTitle(const QJsonObject &item) {
     return title.toString().trimmed();
   }
   return {};
+}
+
+QString viewTitle(const QJsonValue &view) {
+  const QJsonObject obj = view.toObject();
+  const QJsonObject inner = obj.value(QStringLiteral("view")).toObject();
+  const QString title = inner.value(QStringLiteral("title")).toString().trimmed();
+  return title;
+}
+
+QString viewBody(const QJsonValue &view) {
+  const QJsonObject inner = view.toObject().value(QStringLiteral("view")).toObject();
+  const QString output = inner.value(QStringLiteral("output")).toString();
+  if (!output.isEmpty()) {
+    return output;
+  }
+  const QString fromContent = textFromContent(inner.value(QStringLiteral("content")));
+  if (!fromContent.isEmpty()) {
+    return fromContent;
+  }
+  const QJsonValue raw = inner.value(QStringLiteral("rawInput"));
+  if (raw.isString()) {
+    return raw.toString();
+  }
+  if (raw.isObject() || raw.isArray()) {
+    return QString::fromUtf8(QJsonDocument::fromVariant(raw.toVariant()).toJson(QJsonDocument::Compact));
+  }
+  return {};
+}
+
+QString viewCard(const QJsonValue &view) {
+  const QString card = view.toObject().value(QStringLiteral("view")).toObject().value(QStringLiteral("card")).toString();
+  return card.isEmpty() ? QStringLiteral("generic") : card;
 }
 
 }  // namespace
@@ -94,6 +127,23 @@ QJsonObject firstWorkspace(const QJsonObject &listValue) {
   return items.at(0).toObject();
 }
 
+QJsonObject workspaceById(const QJsonObject &listValue, const QString &workspaceId) {
+  if (workspaceId.isEmpty()) {
+    return firstWorkspace(listValue);
+  }
+  const QJsonArray items = listValue.value(QStringLiteral("items")).toArray();
+  for (const QJsonValue &value : items) {
+    if (!value.isObject()) {
+      continue;
+    }
+    const QJsonObject item = value.toObject();
+    if (item.value(QStringLiteral("workspaceId")).toString() == workspaceId) {
+      return item;
+    }
+  }
+  return firstWorkspace(listValue);
+}
+
 QSet<QString> archivedSessionIds(const QJsonObject &listValue) {
   QSet<QString> ids;
   const QJsonArray archived = listValue.value(QStringLiteral("archivedSessionIds")).toArray();
@@ -104,6 +154,27 @@ QSet<QString> archivedSessionIds(const QJsonObject &listValue) {
     }
   }
   return ids;
+}
+
+QVariantList workspaceRows(const QJsonObject &listValue) {
+  QVariantList rows;
+  const QJsonArray items = listValue.value(QStringLiteral("items")).toArray();
+  for (const QJsonValue &value : items) {
+    if (!value.isObject()) {
+      continue;
+    }
+    const QJsonObject item = value.toObject();
+    const QString id = item.value(QStringLiteral("workspaceId")).toString();
+    if (id.isEmpty()) {
+      continue;
+    }
+    QVariantMap row;
+    row.insert(QStringLiteral("workspaceId"), id);
+    row.insert(QStringLiteral("title"), workspaceTitle(item));
+    row.insert(QStringLiteral("path"), item.value(QStringLiteral("path")).toString());
+    rows.append(row);
+  }
+  return rows;
 }
 
 QVariantList sessionRows(const QJsonArray &items, const QSet<QString> *allowIds,
@@ -131,6 +202,18 @@ QVariantList sessionRows(const QJsonArray &items, const QSet<QString> *allowIds,
   return rows;
 }
 
+QJsonObject unwrapEvent(const QJsonValue &entry) {
+  if (!entry.isObject()) {
+    return {};
+  }
+  const QJsonObject wrap = entry.toObject();
+  QJsonObject event = wrap.value(QStringLiteral("event")).toObject();
+  if (event.isEmpty() && wrap.contains(QStringLiteral("type"))) {
+    event = wrap;
+  }
+  return event;
+}
+
 QString textFromContent(const QJsonValue &content) {
   if (!content.isArray()) {
     return {};
@@ -138,7 +221,8 @@ QString textFromContent(const QJsonValue &content) {
   QStringList parts;
   for (const QJsonValue &part : content.toArray()) {
     const QJsonObject obj = part.toObject();
-    if (obj.value(QStringLiteral("type")).toString() != QLatin1String("text")) {
+    const QString type = obj.value(QStringLiteral("type")).toString();
+    if (type != QLatin1String("text") && type != QLatin1String("tool-result")) {
       continue;
     }
     const QString text = obj.value(QStringLiteral("text")).toString();
@@ -149,43 +233,55 @@ QString textFromContent(const QJsonValue &content) {
   return parts.join(QLatin1Char('\n'));
 }
 
-QVariantList messageRows(const QJsonArray &historyEvents) {
-  QVariantList rows;
-  for (const QJsonValue &value : historyEvents) {
-    if (!value.isObject()) {
-      continue;
-    }
-    const QJsonObject wrap = value.toObject();
-    QJsonObject event = wrap.value(QStringLiteral("event")).toObject();
-    if (event.isEmpty() && wrap.contains(QStringLiteral("type"))) {
-      event = wrap;
-    }
-    const QString type = event.value(QStringLiteral("type")).toString();
-    const QJsonObject data = event.value(QStringLiteral("data")).toObject();
-    const int seq = event.value(QStringLiteral("seq")).toInt();
-    QString role;
-    if (type == QLatin1String("user/message")) {
-      const QString kind = data.value(QStringLiteral("source")).toObject().value(QStringLiteral("kind")).toString();
-      if (!kind.isEmpty() && kind != QLatin1String("user")) {
-        continue;
-      }
-      role = QStringLiteral("user");
-    } else if (type == QLatin1String("assistant/message")) {
-      role = QStringLiteral("assistant");
-    } else {
-      continue;
-    }
-    const QString text = textFromContent(data.value(QStringLiteral("content")));
-    if (text.isEmpty()) {
-      continue;
-    }
-    QVariantMap row;
-    row.insert(QStringLiteral("role"), role);
-    row.insert(QStringLiteral("text"), text);
-    row.insert(QStringLiteral("seq"), seq);
-    rows.append(row);
+QString eventText(const QJsonObject &data) {
+  const QString direct = textFromContent(data.value(QStringLiteral("content")));
+  if (!direct.isEmpty()) {
+    return direct;
   }
-  return rows;
+  const QJsonObject message = data.value(QStringLiteral("message")).toObject();
+  return textFromContent(message.value(QStringLiteral("content")));
+}
+
+QVariantMap toolRow(const QJsonObject &event, const QJsonValue &view) {
+  const QJsonObject data = event.value(QStringLiteral("data")).toObject();
+  const QString type = event.value(QStringLiteral("type")).toString();
+  QVariantMap row;
+  row.insert(QStringLiteral("kind"), QStringLiteral("tool"));
+  row.insert(QStringLiteral("role"), QStringLiteral("tool"));
+  row.insert(QStringLiteral("seq"), event.value(QStringLiteral("seq")).toInt());
+  row.insert(QStringLiteral("callId"), data.value(QStringLiteral("callId")).toString());
+  if (row.value(QStringLiteral("callId")).toString().isEmpty()) {
+    const QJsonObject message = data.value(QStringLiteral("message")).toObject();
+    const QJsonArray content = message.value(QStringLiteral("content")).toArray();
+    if (!content.isEmpty()) {
+      row.insert(QStringLiteral("callId"), content.at(0).toObject().value(QStringLiteral("callId")).toString());
+    }
+  }
+  const QString name = data.value(QStringLiteral("name")).toString();
+  row.insert(QStringLiteral("toolName"), name);
+  row.insert(QStringLiteral("card"), viewCard(view));
+  QString title = viewTitle(view);
+  if (title.isEmpty()) {
+    title = name.isEmpty() ? QStringLiteral("工具") : name;
+  }
+  row.insert(QStringLiteral("title"), title);
+  QString body = viewBody(view);
+  if (body.isEmpty()) {
+    body = eventText(data);
+  }
+  if (body.isEmpty() && type == QLatin1String("tool/call")) {
+    body = data.value(QStringLiteral("arguments")).toString();
+  }
+  row.insert(QStringLiteral("body"), body);
+  row.insert(QStringLiteral("text"), title);
+  if (type == QLatin1String("tool/result")) {
+    const bool failed = data.contains(QStringLiteral("error"));
+    row.insert(QStringLiteral("status"), failed ? QStringLiteral("error") : QStringLiteral("done"));
+  } else {
+    row.insert(QStringLiteral("status"), QStringLiteral("pending"));
+  }
+  row.insert(QStringLiteral("streaming"), false);
+  return row;
 }
 
 QJsonObject promptPayload(const QString &sessionId, const QString &text) {
@@ -207,12 +303,99 @@ QJsonObject createPayload(const QString &workspaceId) {
   return payload;
 }
 
+QJsonObject modelsPayload(const QString &sessionId) {
+  QJsonObject payload;
+  payload.insert(QStringLiteral("sessionId"), sessionId);
+  return payload;
+}
+
+QJsonObject selectModelPayload(const QString &sessionId, const QString &provider, const QString &model) {
+  QJsonObject payload;
+  payload.insert(QStringLiteral("sessionId"), sessionId);
+  payload.insert(QStringLiteral("provider"), provider);
+  payload.insert(QStringLiteral("model"), model);
+  return payload;
+}
+
+QJsonObject cancelPayload(const QString &sessionId) {
+  QJsonObject payload;
+  payload.insert(QStringLiteral("sessionId"), sessionId);
+  return payload;
+}
+
+QVariantList modelOptions(const QJsonObject &modelsValue) {
+  QVariantList rows;
+  const QJsonArray groups = modelsValue.value(QStringLiteral("groups")).toArray();
+  for (const QJsonValue &groupValue : groups) {
+    const QJsonObject group = groupValue.toObject();
+    const QString provider = group.value(QStringLiteral("id")).toString();
+    const QString providerName = group.value(QStringLiteral("name")).toString();
+    const QJsonArray models = group.value(QStringLiteral("models")).toArray();
+    for (const QJsonValue &modelValue : models) {
+      const QJsonObject model = modelValue.toObject();
+      const QString id = model.value(QStringLiteral("id")).toString();
+      if (provider.isEmpty() || id.isEmpty()) {
+        continue;
+      }
+      QVariantMap row;
+      row.insert(QStringLiteral("provider"), provider);
+      row.insert(QStringLiteral("model"), id);
+      const QString name = model.value(QStringLiteral("name")).toString();
+      row.insert(QStringLiteral("name"), name.isEmpty() ? id : name);
+      row.insert(QStringLiteral("group"), providerName.isEmpty() ? provider : providerName);
+      rows.append(row);
+    }
+  }
+  return rows;
+}
+
+QString modelLabel(const QJsonObject &modelsValue) {
+  const QJsonObject current = modelsValue.value(QStringLiteral("current")).toObject();
+  const QString model = current.value(QStringLiteral("model")).toString();
+  if (!model.isEmpty()) {
+    return model;
+  }
+  return QStringLiteral("模型");
+}
+
+QVariantList settingsNamespaces(const QJsonObject &describeValue) {
+  QVariantList rows;
+  const QJsonArray namespaces = describeValue.value(QStringLiteral("namespaces")).toArray();
+  const bool writable = describeValue.value(QStringLiteral("writable")).toBool();
+  for (const QJsonValue &value : namespaces) {
+    const QJsonObject item = value.toObject();
+    const QString ns = item.value(QStringLiteral("ns")).toString();
+    if (ns.isEmpty()) {
+      continue;
+    }
+    QVariantMap row;
+    row.insert(QStringLiteral("ns"), ns);
+    row.insert(QStringLiteral("applies"), item.value(QStringLiteral("applies")).toString());
+    row.insert(QStringLiteral("writable"), writable);
+    rows.append(row);
+  }
+  return rows;
+}
+
 QString blankSessionId(const QVariantList &rows) {
   for (const QVariant &row : rows) {
     const QVariantMap map = row.toMap();
     if (map.value(QStringLiteral("blank")).toBool()) {
       return map.value(QStringLiteral("sessionId")).toString();
     }
+  }
+  return {};
+}
+
+QString projectionTitleValue(const QString &key, const QJsonValue &value) {
+  if (key != QLatin1String("title")) {
+    return {};
+  }
+  if (value.isString()) {
+    return value.toString().trimmed();
+  }
+  if (value.isObject()) {
+    return value.toObject().value(QStringLiteral("title")).toString().trimmed();
   }
   return {};
 }

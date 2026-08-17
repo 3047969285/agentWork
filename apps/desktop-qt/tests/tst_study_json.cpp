@@ -1,5 +1,6 @@
 #include <QtTest>
 
+#include "models/TranscriptModel.h"
 #include "utils/StudyJson.h"
 
 class TstStudyJson : public QObject {
@@ -46,7 +47,7 @@ class TstStudyJson : public QObject {
     QCOMPARE(rows.at(0).toMap().value(QStringLiteral("sessionId")).toString(), QStringLiteral("keep"));
   }
 
-  void messageRows_keepsUserAndAssistantText() {
+  void transcript_keepsUserAssistantAndSkipsPlugin() {
     QJsonArray events;
     events.append(QJsonObject{
         {QStringLiteral("event"),
@@ -73,14 +74,16 @@ class TstStudyJson : public QObject {
          QJsonObject{{QStringLiteral("type"), QStringLiteral("assistant/message")},
                      {QStringLiteral("seq"), 3},
                      {QStringLiteral("data"),
-                      QJsonObject{{QStringLiteral("content"),
-                                   QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("text")},
-                                                          {QStringLiteral("text"), QStringLiteral("先从目录起笔。")}}}}}}}}});
-    const QVariantList rows = dsh::study::messageRows(events);
-    QCOMPARE(rows.size(), 2);
-    QCOMPARE(rows.at(0).toMap().value(QStringLiteral("role")).toString(), QStringLiteral("user"));
-    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("role")).toString(), QStringLiteral("assistant"));
-    QCOMPARE(rows.at(1).toMap().value(QStringLiteral("text")).toString(), QStringLiteral("先从目录起笔。"));
+                      QJsonObject{{QStringLiteral("message"),
+                                   QJsonObject{{QStringLiteral("content"),
+                                                QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("text")},
+                                                                       {QStringLiteral("text"), QStringLiteral("先从目录起笔。")}}}}}}}}}}});
+    TranscriptModel model;
+    model.resetFromHistory(events);
+    QCOMPARE(model.rowCount(), 2);
+    QCOMPARE(model.data(model.index(0), TranscriptModel::RoleNameRole).toString(), QStringLiteral("user"));
+    QCOMPARE(model.data(model.index(1), TranscriptModel::RoleNameRole).toString(), QStringLiteral("assistant"));
+    QCOMPARE(model.data(model.index(1), TranscriptModel::TextRole).toString(), QStringLiteral("先从目录起笔。"));
   }
 
   void promptPayload_matchesSessionPromptWire() {
@@ -91,6 +94,50 @@ class TstStudyJson : public QObject {
     QCOMPARE(content.size(), 1);
     QCOMPARE(content.at(0).toObject().value(QStringLiteral("type")).toString(), QStringLiteral("text"));
     QCOMPARE(content.at(0).toObject().value(QStringLiteral("text")).toString(), QStringLiteral("落墨"));
+  }
+
+  void eventText_readsNestedAssistantMessage() {
+    QJsonObject data;
+    QJsonObject message;
+    message.insert(QStringLiteral("content"),
+                   QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("text")},
+                                          {QStringLiteral("text"), QStringLiteral("先从目录起笔。")}}});
+    data.insert(QStringLiteral("message"), message);
+    QCOMPARE(dsh::study::eventText(data), QStringLiteral("先从目录起笔。"));
+  }
+
+  void toolRow_usesHostViewTitle() {
+    QJsonObject event;
+    event.insert(QStringLiteral("type"), QStringLiteral("tool/call"));
+    event.insert(QStringLiteral("seq"), 4);
+    event.insert(QStringLiteral("data"),
+                 QJsonObject{{QStringLiteral("callId"), QStringLiteral("c1")},
+                             {QStringLiteral("name"), QStringLiteral("bash")},
+                             {QStringLiteral("arguments"), QStringLiteral("{\"cmd\":\"ls\"}")}});
+    QJsonObject view;
+    view.insert(QStringLiteral("for"), QStringLiteral("call"));
+    view.insert(QStringLiteral("view"),
+                QJsonObject{{QStringLiteral("card"), QStringLiteral("terminal")},
+                            {QStringLiteral("title"), QStringLiteral("ls")}});
+    const QVariantMap row = dsh::study::toolRow(event, view);
+    QCOMPARE(row.value(QStringLiteral("kind")).toString(), QStringLiteral("tool"));
+    QCOMPARE(row.value(QStringLiteral("title")).toString(), QStringLiteral("ls"));
+    QCOMPARE(row.value(QStringLiteral("card")).toString(), QStringLiteral("terminal"));
+    QCOMPARE(row.value(QStringLiteral("status")).toString(), QStringLiteral("pending"));
+  }
+
+  void workspaceRows_keepsIdAndTitle() {
+    QJsonObject list;
+    list.insert(QStringLiteral("items"),
+                QJsonArray{QJsonObject{{QStringLiteral("workspaceId"), QStringLiteral("w1")},
+                                       {QStringLiteral("title"), QStringLiteral("东斋")},
+                                       {QStringLiteral("path"), QStringLiteral("D:/work/east")},
+                                       {QStringLiteral("sessionIds"), QJsonArray{}},
+                                       {QStringLiteral("createdAt"), QStringLiteral("t")},
+                                       {QStringLiteral("updatedAt"), QStringLiteral("t")}}});
+    const QVariantList rows = dsh::study::workspaceRows(list);
+    QCOMPARE(rows.size(), 1);
+    QCOMPARE(rows.at(0).toMap().value(QStringLiteral("title")).toString(), QStringLiteral("东斋"));
   }
 
   void blankSessionId_returnsFirstBlank() {

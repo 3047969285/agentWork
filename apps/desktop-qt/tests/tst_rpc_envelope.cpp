@@ -66,6 +66,18 @@ class TstRpcEnvelope : public QObject {
     QVERIFY(errorMessage.isEmpty());
   }
 
+  void makeClientResponse_echoesRpcIdAndValue() {
+    const QJsonObject response =
+        RpcClient::makeClientResponse(QStringLiteral("rpc-1"), QJsonObject{{QStringLiteral("outcome"), QStringLiteral("allowed-once")}});
+    QCOMPARE(response.value(QString::fromLatin1(dsh::rpc::kFieldType)).toString(),
+             QString::fromLatin1(dsh::rpc::kClientResponseType));
+    QCOMPARE(response.value(QString::fromLatin1(dsh::rpc::kFieldRpcId)).toString(), QStringLiteral("rpc-1"));
+    const QJsonObject result = response.value(QString::fromLatin1(dsh::rpc::kFieldResult)).toObject();
+    QVERIFY(result.value(QString::fromLatin1(dsh::rpc::kFieldOk)).toBool());
+    QCOMPARE(result.value(QString::fromLatin1(dsh::rpc::kFieldValue)).toObject().value(QStringLiteral("outcome")).toString(),
+             QStringLiteral("allowed-once"));
+  }
+
   void hostDescribe_liveOptional() {
     const QByteArray baseUrlEnv = qgetenv("DSH_DESKTOP_RPC_BASE_URL");
     if (baseUrlEnv.isEmpty()) {

@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-17-desktop-qt-ink-study-layout.md
-2026-08-17-desktop-qt-ink-study-layout.md: 5bf07a8c4fbb8363cc6cb8151dcac6eb30ed98ab
-2026-08-17-desktop-qt-ink-study-layout.zh.md: f2055e7cca265d45ac12c3d8139bb0146cd7fd77
+2026-08-17-desktop-qt-ink-study-layout.md: 43fb1876b2ffb560870c28c6caebf7c50c60bf93
+2026-08-17-desktop-qt-ink-study-layout.zh.md: ff1cd8981b7ddc41ccc46656448c42a0295d07b0

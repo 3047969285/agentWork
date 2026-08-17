@@ -44,11 +44,31 @@ Item {
                 return connection.statusText
             return ""
         }
+        MouseArea {
+            anchors.fill: parent
+            enabled: typeof study !== "undefined" && study.noticeText.length > 0
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: study.dismissNotice()
+        }
     }
 
     ConversationPane {
         id: scroll
         anchors.top: inlineStatus.visible ? inlineStatus.bottom : titleBar.bottom
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.bottom: approvalStrip.top
+    }
+
+    ApprovalStrip {
+        id: approvalStrip
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.bottom: questionStrip.top
+    }
+
+    QuestionStrip {
+        id: questionStrip
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.bottom: composer.top
@@ -59,5 +79,9 @@ Item {
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.bottom: parent.bottom
+    }
+
+    SettingsPane {
+        anchors.fill: parent
     }
 }

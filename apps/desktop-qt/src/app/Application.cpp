@@ -4,7 +4,10 @@
 #include "constants/AppConstants.h"
 #include "hooks/ConnectionHook.h"
 #include "hooks/StudyHook.h"
+#include "models/SessionListModel.h"
+#include "models/TranscriptModel.h"
 #include "services/host/HostProcess.h"
+#include "services/rpc/EventStream.h"
 #include "services/rpc/RpcClient.h"
 #include "services/rpc/RpcTypes.h"
 #include "utils/StudyJson.h"
@@ -20,8 +23,15 @@
 
 namespace {
 
-constexpr int kHistoryPollCount = 20;
-constexpr int kHistoryPollMs = 1000;
+constexpr int kStreamFlushMs = 16;
+
+QString chunkDelta(const QJsonObject &data) {
+  const QJsonObject chunk = data.value(QStringLiteral("chunk")).toObject();
+  if (chunk.value(QStringLiteral("type")).toString() != QLatin1String("text-delta")) {
+    return {};
+  }
+  return chunk.value(QStringLiteral("text")).toString();
+}
 
 }  // namespace
 
@@ -29,9 +39,15 @@ Application::Application(QObject *parent)
     : QObject(parent),
       m_hostProcess(new HostProcess(this)),
       m_rpcClient(new RpcClient(this)),
+      m_eventStream(new EventStream(this)),
       m_connectionHook(new ConnectionHook(this)),
       m_studyHook(new StudyHook(this)),
-      m_windowController(new WindowController(this)) {
+      m_windowController(new WindowController(this)),
+      m_streamFlush(new QTimer(this)) {
+  m_streamFlush->setSingleShot(true);
+  m_streamFlush->setInterval(kStreamFlushMs);
+  connect(m_streamFlush, &QTimer::timeout, this, &Application::flushStreamDelta);
+
   connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, &Application::stop);
 
   connect(m_hostProcess, &HostProcess::started, this, &Application::onHostStarted);
@@ -44,15 +60,28 @@ Application::Application(QObject *parent)
   connect(m_studyHook, &StudyHook::createRequested, this, &Application::onCreateRequested);
   connect(m_studyHook, &StudyHook::sendRequested, this, &Application::onSendRequested);
   connect(m_studyHook, &StudyHook::refreshRequested, this, &Application::onRefreshRequested);
+  connect(m_studyHook, &StudyHook::workspaceRequested, this, &Application::onWorkspaceRequested);
+  connect(m_studyHook, &StudyHook::modelRequested, this, &Application::onModelRequested);
+  connect(m_studyHook, &StudyHook::cancelRequested, this, &Application::onCancelRequested);
+  connect(m_studyHook, &StudyHook::approvalAnswerRequested, this, &Application::onApprovalAnswerRequested);
+  connect(m_studyHook, &StudyHook::questionOptionRequested, this, &Application::onQuestionOptionRequested);
+  connect(m_studyHook, &StudyHook::questionCustomRequested, this, &Application::onQuestionCustomRequested);
+  connect(m_studyHook, &StudyHook::settingsOpenRequested, this, &Application::onSettingsOpenRequested);
+  connect(m_studyHook, &StudyHook::settingsDocumentRequested, this, &Application::onSettingsDocumentRequested);
+
+  connect(m_eventStream, &EventStream::muxFrame, this, &Application::onMuxFrame);
+  connect(m_eventStream, &EventStream::hostFrame, this, &Application::onHostFrame);
+  connect(m_eventStream, &EventStream::openChanged, this, &Application::onStreamOpenChanged);
+  connect(m_eventStream, &EventStream::errorOccurred, this, [this](const QString &message) {
+    if (!m_isStopping) {
+      m_studyHook->setNoticeText(message);
+    }
+  });
 }
 
-Application::~Application() {
-  stop();
-}
+Application::~Application() { stop(); }
 
-bool Application::init() {
-  return m_windowController->init(m_connectionHook, m_studyHook);
-}
+bool Application::init() { return m_windowController->init(m_connectionHook, m_studyHook); }
 
 void Application::start() {
   if (m_isStopping) {
@@ -90,6 +119,11 @@ void Application::start() {
 
 void Application::stop() {
   m_isStopping = true;
+  m_streamFlush->stop();
+  m_pendingDelta.clear();
+  if (m_eventStream != nullptr) {
+    m_eventStream->disconnectFromHost();
+  }
   if (m_hostProcess != nullptr) {
     m_hostProcess->stop();
   }
@@ -109,6 +143,8 @@ void Application::onHostReady(quint16 port) {
 
 void Application::onHostStopped() {
   if (!m_isStopping) {
+    m_eventStream->disconnectFromHost();
+    m_studyHook->setStreamOpen(false);
     m_connectionHook->setConnected(false);
     m_connectionHook->setConnecting(false);
     m_connectionHook->setHasError(true);
@@ -155,6 +191,7 @@ void Application::doHandshake() {
 
                              m_connectionHook->setStatusText(
                                  QStringLiteral("已连接 · v%1 · %2").arg(version).arg(m_port));
+                             connectStreams();
                              loadStudy();
                            } else {
                              scheduleRetry(dsh::study::rpcErrorMessage(resultOrError));
@@ -191,9 +228,23 @@ void Application::scheduleRetry(const QString &reason) {
   }
 }
 
+void Application::connectStreams() {
+  m_eventStream->connectTo(m_rpcClient->baseUrl());
+}
+
+void Application::onStreamOpenChanged(bool open) {
+  m_studyHook->setStreamOpen(open);
+  if (!open && m_connectionHook->connected() && !m_isStopping) {
+    m_studyHook->setNoticeText(QStringLiteral("流未通 · 点刷新"));
+  }
+}
+
 void Application::loadStudy() {
   if (m_isStopping || !m_connectionHook->connected()) {
     return;
+  }
+  if (!m_eventStream->isOpen()) {
+    connectStreams();
   }
 
   const int gen = ++m_studyGeneration;
@@ -228,7 +279,11 @@ void Application::loadStudy() {
 }
 
 void Application::applyStudyLists(const QJsonObject &workspaceList, const QJsonObject &sessionList) {
-  const QJsonObject workspace = dsh::study::firstWorkspace(workspaceList);
+  m_workspaceList = workspaceList;
+  m_sessionList = sessionList;
+  m_studyHook->setWorkspaces(dsh::study::workspaceRows(workspaceList));
+
+  const QJsonObject workspace = dsh::study::workspaceById(workspaceList, m_studyHook->workspaceId());
   const QString workspaceId = workspace.value(QStringLiteral("workspaceId")).toString();
   m_studyHook->setWorkspaceId(workspaceId);
   m_studyHook->setWorkspaceTitle(workspace.isEmpty() ? QStringLiteral("未入席")
@@ -249,39 +304,40 @@ void Application::applyStudyLists(const QJsonObject &workspaceList, const QJsonO
 
   const QVariantList rows = dsh::study::sessionRows(sessionList.value(QStringLiteral("items")).toArray(),
                                                     allowPtr, dsh::study::archivedSessionIds(workspaceList));
-  m_studyHook->setSessions(rows);
+  m_studyHook->sessionList()->replaceAll(rows);
 
   QString selected = m_studyHook->selectedSessionId();
-  bool stillListed = false;
-  for (const QVariant &row : rows) {
-    if (row.toMap().value(QStringLiteral("sessionId")).toString() == selected) {
-      stillListed = true;
-      break;
-    }
+  if (!m_studyHook->sessionList()->contains(selected)) {
+    selected = m_studyHook->sessionList()->firstSessionId();
   }
-  if (!stillListed) {
-    selected = rows.isEmpty() ? QString() : rows.at(0).toMap().value(QStringLiteral("sessionId")).toString();
-  }
-  m_studyHook->setSelectedSessionId(selected);
-  m_studyHook->setSelectedTitle(titleForSession(selected));
-  if (selected.isEmpty()) {
-    m_studyHook->setMessages({});
+  applySelectedSession(selected);
+}
+
+void Application::applySelectedSession(const QString &sessionId) {
+  m_streamFlush->stop();
+  m_pendingDelta.clear();
+  m_studyHook->setSelectedSessionId(sessionId);
+  m_studyHook->setSelectedTitle(titleForSession(sessionId));
+  m_studyHook->setModelsOpen(false);
+  m_studyHook->setPendingApproval({});
+  m_studyHook->setPendingQuestion({});
+  m_questionItems = QJsonArray();
+  m_questionAnswers = QJsonArray();
+  m_questionIndex = 0;
+  m_questionRpcId.clear();
+  m_questionSessionId.clear();
+  if (sessionId.isEmpty()) {
+    m_studyHook->transcriptModel()->clear();
+    m_studyHook->setSending(false);
+    m_studyHook->setStreaming(false);
     return;
   }
-  loadHistory(selected);
+  loadHistory(sessionId);
+  loadModels(sessionId);
 }
 
 QString Application::titleForSession(const QString &sessionId) const {
-  if (sessionId.isEmpty()) {
-    return {};
-  }
-  for (const QVariant &row : m_studyHook->sessions()) {
-    const QVariantMap map = row.toMap();
-    if (map.value(QStringLiteral("sessionId")).toString() == sessionId) {
-      return map.value(QStringLiteral("title")).toString();
-    }
-  }
-  return sessionId.left(8);
+  return m_studyHook->sessionList()->titleFor(sessionId);
 }
 
 void Application::onSelectRequested(const QString &sessionId) {
@@ -289,12 +345,18 @@ void Application::onSelectRequested(const QString &sessionId) {
     m_studyHook->setNoticeText(QStringLiteral("尚未连接"));
     return;
   }
-  m_pollRemaining = 0;
   m_studyHook->setSending(false);
   m_studyHook->setNoticeText({});
-  m_studyHook->setSelectedSessionId(sessionId);
-  m_studyHook->setSelectedTitle(titleForSession(sessionId));
-  loadHistory(sessionId);
+  applySelectedSession(sessionId);
+}
+
+void Application::onWorkspaceRequested(const QString &workspaceId) {
+  if (!m_connectionHook->connected()) {
+    m_studyHook->setNoticeText(QStringLiteral("尚未连接"));
+    return;
+  }
+  m_studyHook->setWorkspaceId(workspaceId);
+  applyStudyLists(m_workspaceList, m_sessionList);
 }
 
 void Application::onCreateRequested() {
@@ -302,7 +364,7 @@ void Application::onCreateRequested() {
     m_studyHook->setNoticeText(QStringLiteral("尚未连接"));
     return;
   }
-  const QString reusable = dsh::study::blankSessionId(m_studyHook->sessions());
+  const QString reusable = m_studyHook->sessionList()->blankSessionId();
   if (!reusable.isEmpty()) {
     onSelectRequested(reusable);
     return;
@@ -342,20 +404,7 @@ void Application::onSendRequested(const QString &text) {
 
   m_studyHook->setSending(true);
   m_studyHook->setNoticeText({});
-
-  int maxSeq = 0;
-  for (const QVariant &row : m_studyHook->messages()) {
-    maxSeq = qMax(maxSeq, row.toMap().value(QStringLiteral("seq")).toInt());
-  }
-  m_pollAfterSeq = maxSeq;
-
-  QVariantList optimistic = m_studyHook->messages();
-  QVariantMap userRow;
-  userRow.insert(QStringLiteral("role"), QStringLiteral("user"));
-  userRow.insert(QStringLiteral("text"), text);
-  userRow.insert(QStringLiteral("seq"), -1);
-  optimistic.append(userRow);
-  m_studyHook->setMessages(optimistic);
+  m_studyHook->transcriptModel()->appendUser(text);
 
   m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodSessionPrompt),
                          dsh::study::promptPayload(sessionId, text),
@@ -373,12 +422,185 @@ void Application::onSendRequested(const QString &text) {
                            if (command.value(QStringLiteral("kind")).toString() == QLatin1String("success") &&
                                !command.value(QStringLiteral("text")).toString().isEmpty()) {
                              m_studyHook->setNoticeText(command.value(QStringLiteral("text")).toString());
+                             m_studyHook->setSending(false);
                            }
-                           beginHistoryPoll(sessionId);
                          });
 }
 
 void Application::onRefreshRequested() { loadStudy(); }
+
+void Application::onModelRequested(const QString &provider, const QString &model) {
+  const QString sessionId = m_studyHook->selectedSessionId();
+  if (!m_connectionHook->connected() || sessionId.isEmpty()) {
+    m_studyHook->setNoticeText(QStringLiteral("尚未连接"));
+    return;
+  }
+  m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodSessionSelectModel),
+                         dsh::study::selectModelPayload(sessionId, provider, model),
+                         [this, sessionId, model](bool ok, QJsonValue resultOrError) {
+                           if (m_studyHook->selectedSessionId() != sessionId) {
+                             return;
+                           }
+                           if (!ok) {
+                             m_studyHook->setNoticeText(dsh::study::rpcErrorMessage(resultOrError));
+                             return;
+                           }
+                           const QJsonObject selected = resultOrError.toObject().value(QStringLiteral("selected")).toObject();
+                           const QString label = selected.value(QStringLiteral("model")).toString();
+                           m_studyHook->setModelLabel(label.isEmpty() ? model : label);
+                           m_studyHook->setNoticeText({});
+                         });
+}
+
+void Application::onCancelRequested() {
+  const QString sessionId = m_studyHook->selectedSessionId();
+  if (!m_connectionHook->connected() || sessionId.isEmpty()) {
+    return;
+  }
+  m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodSessionCancel), dsh::study::cancelPayload(sessionId),
+                         [this, sessionId](bool ok, QJsonValue resultOrError) {
+                           if (m_studyHook->selectedSessionId() != sessionId) {
+                             return;
+                           }
+                           if (!ok) {
+                             m_studyHook->setNoticeText(dsh::study::rpcErrorMessage(resultOrError));
+                             return;
+                           }
+                           m_studyHook->setSending(false);
+                           m_studyHook->setStreaming(false);
+                           flushStreamDelta();
+                           m_studyHook->transcriptModel()->finishStreaming();
+                         });
+}
+
+void Application::onApprovalAnswerRequested(const QString &outcome) {
+  const QVariantMap pending = m_studyHook->pendingApproval();
+  const QString rpcId = pending.value(QStringLiteral("rpcId")).toString();
+  const QString sessionId = pending.value(QStringLiteral("sessionId")).toString();
+  const QString approvalId = pending.value(QStringLiteral("approvalId")).toString();
+  if (rpcId.isEmpty() || sessionId.isEmpty() || approvalId.isEmpty()) {
+    return;
+  }
+  if (outcome != QLatin1String("allowed-once") && outcome != QLatin1String("rejected")) {
+    return;
+  }
+  QJsonObject value;
+  value.insert(QStringLiteral("sessionId"), sessionId);
+  value.insert(QStringLiteral("approvalId"), approvalId);
+  value.insert(QStringLiteral("outcome"), outcome);
+  m_rpcClient->callRespond(rpcId, value, [this](bool accepted, QString reason) {
+    if (!accepted) {
+      m_studyHook->setNoticeText(reason.isEmpty() ? QStringLiteral("准许未受理") : reason);
+    }
+  });
+}
+
+void Application::onQuestionOptionRequested(const QString &label) {
+  if (m_questionIndex < 0 || m_questionIndex >= m_questionItems.size()) {
+    return;
+  }
+  const QJsonObject item = m_questionItems.at(m_questionIndex).toObject();
+  QJsonObject answer;
+  answer.insert(QStringLiteral("id"), item.value(QStringLiteral("id")).toString());
+  answer.insert(QStringLiteral("selected"), QJsonArray{label});
+  appendQuestionAnswer(answer);
+}
+
+void Application::onQuestionCustomRequested(const QString &text) {
+  if (m_questionIndex < 0 || m_questionIndex >= m_questionItems.size()) {
+    return;
+  }
+  const QJsonObject item = m_questionItems.at(m_questionIndex).toObject();
+  QJsonObject answer;
+  answer.insert(QStringLiteral("id"), item.value(QStringLiteral("id")).toString());
+  answer.insert(QStringLiteral("selected"), QJsonArray{});
+  answer.insert(QStringLiteral("custom"), text);
+  appendQuestionAnswer(answer);
+}
+
+void Application::appendQuestionAnswer(const QJsonObject &answer) {
+  m_questionAnswers.append(answer);
+  ++m_questionIndex;
+  if (m_questionIndex >= m_questionItems.size()) {
+    submitQuestionBatch();
+    return;
+  }
+  publishQuestion();
+}
+
+void Application::publishQuestion() {
+  if (m_questionIndex < 0 || m_questionIndex >= m_questionItems.size()) {
+    m_studyHook->setPendingQuestion({});
+    return;
+  }
+  const QJsonObject item = m_questionItems.at(m_questionIndex).toObject();
+  QVariantMap row;
+  row.insert(QStringLiteral("rpcId"), m_questionRpcId);
+  row.insert(QStringLiteral("sessionId"), m_questionSessionId);
+  row.insert(QStringLiteral("questionId"), item.value(QStringLiteral("id")).toString());
+  row.insert(QStringLiteral("question"), item.value(QStringLiteral("question")).toString());
+  row.insert(QStringLiteral("header"), item.value(QStringLiteral("header")).toString());
+  row.insert(QStringLiteral("detail"), item.value(QStringLiteral("detail")).toString());
+  row.insert(QStringLiteral("multiSelect"), item.value(QStringLiteral("multiSelect")).toBool());
+  row.insert(QStringLiteral("index"), m_questionIndex + 1);
+  row.insert(QStringLiteral("total"), m_questionItems.size());
+  QVariantList options;
+  for (const QJsonValue &optionValue : item.value(QStringLiteral("options")).toArray()) {
+    const QJsonObject option = optionValue.toObject();
+    QVariantMap optionRow;
+    optionRow.insert(QStringLiteral("label"), option.value(QStringLiteral("label")).toString());
+    optionRow.insert(QStringLiteral("description"), option.value(QStringLiteral("description")).toString());
+    options.append(optionRow);
+  }
+  row.insert(QStringLiteral("options"), options);
+  m_studyHook->setPendingQuestion(row);
+}
+
+void Application::submitQuestionBatch() {
+  QJsonObject value;
+  value.insert(QStringLiteral("sessionId"), m_questionSessionId);
+  QJsonObject answer;
+  answer.insert(QStringLiteral("answers"), m_questionAnswers);
+  value.insert(QStringLiteral("answer"), answer);
+  const QString rpcId = m_questionRpcId;
+  m_rpcClient->callRespond(rpcId, value, [this](bool accepted, QString reason) {
+    if (!accepted) {
+      m_studyHook->setNoticeText(reason.isEmpty() ? QStringLiteral("问答未受理") : reason);
+    }
+  });
+}
+
+void Application::onSettingsOpenRequested() {
+  if (!m_connectionHook->connected()) {
+    m_studyHook->setNoticeText(QStringLiteral("尚未连接"));
+    m_studyHook->setSettingsOpen(false);
+    return;
+  }
+  m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodSettingsDescribe), QJsonObject{},
+                         [this](bool ok, QJsonValue resultOrError) {
+                           if (!ok) {
+                             m_studyHook->setNoticeText(dsh::study::rpcErrorMessage(resultOrError));
+                             return;
+                           }
+                           const QJsonObject value = resultOrError.toObject();
+                           m_studyHook->setSettingsWritable(value.value(QStringLiteral("writable")).toBool());
+                           m_studyHook->setSettingsHasDocument(value.value(QStringLiteral("hasDocument")).toBool());
+                           m_studyHook->setSettingsNamespaces(dsh::study::settingsNamespaces(value));
+                         });
+}
+
+void Application::onSettingsDocumentRequested() {
+  if (!m_connectionHook->connected()) {
+    m_studyHook->setNoticeText(QStringLiteral("尚未连接"));
+    return;
+  }
+  m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodSettingsOpenDocument), QJsonObject{},
+                         [this](bool ok, QJsonValue resultOrError) {
+                           if (!ok) {
+                             m_studyHook->setNoticeText(dsh::study::rpcErrorMessage(resultOrError));
+                           }
+                         });
+}
 
 void Application::loadHistory(const QString &sessionId) {
   if (sessionId.isEmpty() || !m_connectionHook->connected()) {
@@ -398,56 +620,145 @@ void Application::loadHistory(const QString &sessionId) {
                              return;
                            }
                            const QJsonArray events = resultOrError.toObject().value(QStringLiteral("events")).toArray();
-                           m_studyHook->setMessages(dsh::study::messageRows(events));
+                           m_studyHook->transcriptModel()->resetFromHistory(events);
                          });
 }
 
-void Application::beginHistoryPoll(const QString &sessionId) {
-  m_pollRemaining = kHistoryPollCount;
-  pollHistoryTick(sessionId);
+void Application::loadModels(const QString &sessionId) {
+  if (sessionId.isEmpty() || !m_connectionHook->connected()) {
+    return;
+  }
+  m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodSessionModels), dsh::study::modelsPayload(sessionId),
+                         [this, sessionId](bool ok, QJsonValue resultOrError) {
+                           if (m_studyHook->selectedSessionId() != sessionId) {
+                             return;
+                           }
+                           if (!ok) {
+                             m_studyHook->setModelOptions({});
+                             m_studyHook->setModelLabel(QStringLiteral("模型"));
+                             return;
+                           }
+                           const QJsonObject value = resultOrError.toObject();
+                           m_studyHook->setModelOptions(dsh::study::modelOptions(value));
+                           m_studyHook->setModelLabel(dsh::study::modelLabel(value));
+                         });
 }
 
-void Application::pollHistoryTick(const QString &sessionId) {
-  if (m_isStopping || m_studyHook->selectedSessionId() != sessionId) {
-    m_studyHook->setSending(false);
+void Application::flushStreamDelta() {
+  if (m_pendingDelta.isEmpty()) {
+    return;
+  }
+  m_studyHook->transcriptModel()->appendStreamDelta(m_pendingDelta);
+  m_pendingDelta.clear();
+  m_studyHook->setStreaming(m_studyHook->transcriptModel()->hasStreaming());
+}
+
+void Application::onMuxFrame(const QString &rpcId, const QJsonObject &payload) {
+  if (m_isStopping) {
+    return;
+  }
+  const QString type = payload.value(QStringLiteral("type")).toString();
+  const QString sessionId = payload.value(QStringLiteral("sessionId")).toString();
+  const QString selected = m_studyHook->selectedSessionId();
+
+  if (type == QLatin1String("session/projection")) {
+    const QString title = dsh::study::projectionTitleValue(payload.value(QStringLiteral("key")).toString(),
+                                                           payload.value(QStringLiteral("value")));
+    if (!title.isEmpty() && !sessionId.isEmpty()) {
+      m_studyHook->sessionList()->setTitle(sessionId, title);
+      if (sessionId == selected) {
+        m_studyHook->setSelectedTitle(title);
+      }
+    }
     return;
   }
 
-  const int gen = ++m_historyGeneration;
-  QJsonObject payload;
-  payload.insert(QStringLiteral("sessionId"), sessionId);
-  m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodSessionHistory), payload,
-                         [this, gen, sessionId](bool ok, QJsonValue resultOrError) {
-                           if (m_isStopping || gen != m_historyGeneration ||
-                               m_studyHook->selectedSessionId() != sessionId) {
-                             return;
-                           }
-                           if (ok) {
-                             const QJsonArray events =
-                                 resultOrError.toObject().value(QStringLiteral("events")).toArray();
-                             const QVariantList rows = dsh::study::messageRows(events);
-                             m_studyHook->setMessages(rows);
-                             bool sawNewAssistant = false;
-                             for (const QVariant &row : rows) {
-                               const QVariantMap map = row.toMap();
-                               if (map.value(QStringLiteral("role")).toString() == QLatin1String("assistant") &&
-                                   map.value(QStringLiteral("seq")).toInt() > m_pollAfterSeq) {
-                                 sawNewAssistant = true;
-                                 break;
-                               }
-                             }
-                             if (sawNewAssistant) {
-                               m_pollRemaining = 0;
-                               m_studyHook->setSending(false);
-                               loadStudy();
-                               return;
-                             }
-                           }
-                           if (--m_pollRemaining <= 0) {
-                             m_studyHook->setSending(false);
-                             loadStudy();
-                             return;
-                           }
-                           QTimer::singleShot(kHistoryPollMs, this, [this, sessionId]() { pollHistoryTick(sessionId); });
-                         });
+  if (type == QLatin1String("approval/requested") && sessionId == selected) {
+    QVariantMap row;
+    row.insert(QStringLiteral("rpcId"), rpcId);
+    row.insert(QStringLiteral("sessionId"), sessionId);
+    row.insert(QStringLiteral("approvalId"), payload.value(QStringLiteral("approvalId")).toString());
+    row.insert(QStringLiteral("toolName"), payload.value(QStringLiteral("toolName")).toString());
+    row.insert(QStringLiteral("reason"), payload.value(QStringLiteral("reason")).toString());
+    m_studyHook->setPendingApproval(row);
+    return;
+  }
+  if (type == QLatin1String("approval/resolved") && sessionId == selected) {
+    m_studyHook->setPendingApproval({});
+    return;
+  }
+  if (type == QLatin1String("question/requested") && sessionId == selected) {
+    m_questionRpcId = rpcId;
+    m_questionSessionId = sessionId;
+    m_questionItems = payload.value(QStringLiteral("questions")).toArray();
+    m_questionAnswers = QJsonArray();
+    m_questionIndex = 0;
+    publishQuestion();
+    return;
+  }
+  if (type == QLatin1String("question/resolved") && sessionId == selected) {
+    m_studyHook->setPendingQuestion({});
+    m_questionItems = QJsonArray();
+    m_questionAnswers = QJsonArray();
+    m_questionIndex = 0;
+    m_questionRpcId.clear();
+    m_questionSessionId.clear();
+    return;
+  }
+
+  if (type != QLatin1String("session/event") || sessionId != selected) {
+    return;
+  }
+
+  const QJsonObject event = payload.value(QStringLiteral("event")).toObject();
+  const QString eventType = event.value(QStringLiteral("type")).toString();
+  if (eventType == QLatin1String("assistant/chunk")) {
+    const QString delta = chunkDelta(event.value(QStringLiteral("data")).toObject());
+    if (!delta.isEmpty()) {
+      m_pendingDelta += delta;
+      if (!m_streamFlush->isActive()) {
+        m_streamFlush->start();
+      }
+    }
+    return;
+  }
+  flushStreamDelta();
+  m_studyHook->transcriptModel()->applySessionEvent(event, payload.value(QStringLiteral("view")));
+  if (eventType == QLatin1String("assistant/message") || eventType == QLatin1String("turn/end")) {
+    m_studyHook->setStreaming(false);
+    m_studyHook->transcriptModel()->finishStreaming();
+  }
+}
+
+void Application::onHostFrame(const QString &, const QJsonObject &payload) {
+  if (m_isStopping) {
+    return;
+  }
+  const QString type = payload.value(QStringLiteral("type")).toString();
+  const QString sessionId = payload.value(QStringLiteral("sessionId")).toString();
+  if (type == QLatin1String("host/session-status")) {
+    const bool running = payload.value(QStringLiteral("running")).toBool();
+    m_studyHook->sessionList()->setRunning(sessionId, running);
+    if (sessionId == m_studyHook->selectedSessionId()) {
+      m_studyHook->setSending(running);
+      if (!running) {
+        flushStreamDelta();
+        m_studyHook->setStreaming(false);
+        m_studyHook->transcriptModel()->finishStreaming();
+      }
+    }
+    return;
+  }
+  if (type == QLatin1String("host/agent-error") && sessionId == m_studyHook->selectedSessionId()) {
+    m_studyHook->setNoticeText(payload.value(QStringLiteral("message")).toString());
+    m_studyHook->setSending(false);
+    m_studyHook->setStreaming(false);
+    return;
+  }
+  if (type == QLatin1String("host/session-added") || type == QLatin1String("host/session-removed") ||
+      type == QLatin1String("host/workspace-changed") || type == QLatin1String("host/workspace-removed") ||
+      type == QLatin1String("host/workspace-order-changed") ||
+      type == QLatin1String("host/archived-sessions-changed")) {
+    loadStudy();
+  }
 }

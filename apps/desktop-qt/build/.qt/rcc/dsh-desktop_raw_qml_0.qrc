@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/dsh/">
+    <file alias="src/qml/Main.qml">D:/mavenooo/deepseek-harness/apps/desktop-qt/src/qml/Main.qml</file>
+  </qresource>
+</RCC>
+

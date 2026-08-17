@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\mavenooo\deepseek-harness\apps\desktop-qt\build\CMakeFiles\d0285de7d9f55f6a8e9833ba9bc0e13c\dsh-desktop_automoc_json_extraction.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\mavenooo\deepseek-harness\apps\desktop-qt\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\mavenooo\deepseek-harness\apps\desktop-qt\build\CMakeFiles\dsh-desktop_automoc_json_extraction" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{77F75D0D-04CF-3D09-92F6-8C0F6DD84BED}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

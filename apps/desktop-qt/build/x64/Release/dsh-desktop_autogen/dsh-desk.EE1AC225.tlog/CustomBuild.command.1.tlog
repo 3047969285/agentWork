@@ -1,0 +1,40 @@
+^D:\MAVENOOO\DEEPSEEK-HARNESS\APPS\DESKTOP-QT\BUILD\CMAKEFILES\E489595907DF566E0AA6EBCAE1A720E1\TIMESTAMP_(CONFIG).RULE
+setlocal
+cd D:\mavenooo\deepseek-harness\apps\desktop-qt\build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E cmake_autogen D:/mavenooo/deepseek-harness/apps/desktop-qt/build/CMakeFiles/dsh-desktop_autogen.dir/AutogenInfo.json Release
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/mavenooo/deepseek-harness/apps/desktop-qt/build/dsh-desktop_autogen/timestamp_Release
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E cmake_transform_depfile "Visual Studio 17 2022" MSBuildAdditionalInputs D:/mavenooo/deepseek-harness/apps/desktop-qt D:/mavenooo/deepseek-harness/apps/desktop-qt D:/mavenooo/deepseek-harness/apps/desktop-qt/build D:/mavenooo/deepseek-harness/apps/desktop-qt/build D:/mavenooo/deepseek-harness/apps/desktop-qt/build/dsh-desktop_autogen/deps_Release D:/mavenooo/deepseek-harness/apps/desktop-qt/build/CMakeFiles/d/7271165f4dd795a3ba63a863c945e1203e75c76906c0ce77717cc6c470809490.AdditionalInputs
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\MAVENOOO\DEEPSEEK-HARNESS\APPS\DESKTOP-QT\BUILD\CMAKEFILES\D0285DE7D9F55F6A8E9833BA9BC0E13C\DSH-DESKTOP_AUTOGEN.RULE
+setlocal
+cd D:\mavenooo\deepseek-harness\apps\desktop-qt\build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\MAVENOOO\DEEPSEEK-HARNESS\APPS\DESKTOP-QT\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/mavenooo/deepseek-harness/apps/desktop-qt -BD:/mavenooo/deepseek-harness/apps/desktop-qt/build --check-stamp-file D:/mavenooo/deepseek-harness/apps/desktop-qt/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

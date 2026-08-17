@@ -1,0 +1,14 @@
+-rootPath
+D:/mavenooo/deepseek-harness/apps/desktop-qt
+-cmake-output
+-output-file
+D:/mavenooo/deepseek-harness/apps/desktop-qt/build/.qt/qml_imports/dsh-desktop_conf.cmake
+-importPath
+D:/mavenooo/deepseek-harness/apps/desktop-qt/build/dsh
+-importPath
+D:/mavenooo/deepseek-harness/apps/desktop-qt/build
+-importPath
+D:/Qt/6.8.3/msvc2022_64/qml
+-qrcFiles
+D:/mavenooo/deepseek-harness/apps/desktop-qt/build/.qt/rcc/qmake_dsh.qrc
+D:/mavenooo/deepseek-harness/apps/desktop-qt/build/.qt/rcc/dsh-desktop_raw_qml_0.qrc

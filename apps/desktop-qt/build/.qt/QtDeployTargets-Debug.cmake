@@ -1,0 +1,3 @@
+set(__QT_DEPLOY_TARGET_dsh-desktop_FILE D:/mavenooo/deepseek-harness/apps/desktop-qt/build/Debug/dsh-desktop.exe)
+set(__QT_DEPLOY_TARGET_dsh-desktop_TYPE EXECUTABLE)
+set(__QT_DEPLOY_TARGET_dsh-desktop_RUNTIME_DLLS D:/Qt/6.8.3/msvc2022_64/bin/Qt6Quickd.dll;D:/Qt/6.8.3/msvc2022_64/bin/Qt6QmlMetad.dll;D:/Qt/6.8.3/msvc2022_64/bin/Qt6QmlWorkerScriptd.dll;D:/Qt/6.8.3/msvc2022_64/bin/Qt6QmlModelsd.dll;D:/Qt/6.8.3/msvc2022_64/bin/Qt6Qmld.dll;D:/Qt/6.8.3/msvc2022_64/bin/Qt6Networkd.dll;D:/Qt/6.8.3/msvc2022_64/bin/Qt6OpenGLd.dll;D:/Qt/6.8.3/msvc2022_64/bin/Qt6Guid.dll;D:/Qt/6.8.3/msvc2022_64/bin/Qt6Cored.dll)

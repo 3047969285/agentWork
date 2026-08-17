@@ -1,0 +1,20 @@
+^D:\MAVENOOO\DEEPSEEK-HARNESS\APPS\DESKTOP-QT\BUILD\CMAKEFILES\D0285DE7D9F55F6A8E9833BA9BC0E13C\DSH-DESKTOP_AUTOMOC_JSON_EXTRACTION.RULE
+setlocal
+D:\Qt\6.8.3\msvc2022_64\bin\cmake_automoc_parser.exe --cmake-autogen-cache-file D:/mavenooo/deepseek-harness/apps/desktop-qt/build/CMakeFiles/dsh-desktop_autogen.dir/ParseCache_Release.txt --cmake-autogen-info-file D:/mavenooo/deepseek-harness/apps/desktop-qt/build/CMakeFiles/dsh-desktop_autogen.dir/AutogenInfo.json --output-file-path D:/mavenooo/deepseek-harness/apps/desktop-qt/build/meta_types/dsh-desktop_json_file_list.txt --timestamp-file-path D:/mavenooo/deepseek-harness/apps/desktop-qt/build/meta_types/dsh-desktop_json_file_list.txt.timestamp --cmake-autogen-include-dir-path D:/mavenooo/deepseek-harness/apps/desktop-qt/build/dsh-desktop_autogen/include_Release --cmake-multi-config
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^D:\MAVENOOO\DEEPSEEK-HARNESS\APPS\DESKTOP-QT\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/mavenooo/deepseek-harness/apps/desktop-qt -BD:/mavenooo/deepseek-harness/apps/desktop-qt/build --check-stamp-file D:/mavenooo/deepseek-harness/apps/desktop-qt/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -9,25 +9,25 @@ Item {
 
     property int activeBlooms: 0
 
-    Text {
-        text: qsTr("深卷")
-        font.family: "STSong, SimSun, serif"
-        font.pixelSize: 28
-        color: InkTokens.primaryText
+    Column {
         anchors.left: parent.left
         anchors.leftMargin: 24
         anchors.verticalCenter: parent.verticalCenter
-    }
+        spacing: 0
 
-    Text {
-        text: qsTr("DeepSeek Harness")
-        font.family: "STSong, SimSun, serif"
-        font.pixelSize: 14
-        color: InkTokens.ink500
-        anchors.left: parent.left
-        anchors.leftMargin: 24
-        anchors.top: parent.top
-        anchors.topMargin: 36
+        Text {
+            text: qsTr("深卷")
+            font.family: Qt.platform.os === "windows" ? "SimSun" : "serif"
+            font.pixelSize: 22
+            color: InkTokens.primaryText
+        }
+
+        Text {
+            text: qsTr("DeepSeek Harness")
+            font.family: Qt.platform.os === "windows" ? "SimSun" : "serif"
+            font.pixelSize: 12
+            color: InkTokens.ink500
+        }
     }
 
     MouseArea {

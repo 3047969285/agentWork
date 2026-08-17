@@ -20,7 +20,7 @@ Item {
     Text {
         anchors.centerIn: parent
         text: root.connectionStatusText
-        font.family: "STSong, SimSun, serif"
+        font.family: Qt.platform.os === "windows" ? "SimSun" : "serif"
         font.pixelSize: 18
         color: InkTokens.ink500
     }

@@ -9,6 +9,11 @@ Item {
     visible: MotionBudget.bloomMs > 0
     z: 100
 
+    onVisibleChanged: {
+        if (!visible)
+            destroy()
+    }
+
     property real bloomRadius: 4
     property real bloomOpacity: 0.35
 

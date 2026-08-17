@@ -27,7 +27,7 @@ Window {
 
         contentItem: Text {
             text: reduceMotionSwitch.text
-            font.family: "STSong, SimSun, serif"
+            font.family: Qt.platform.os === "windows" ? "SimSun" : "serif"
             font.pixelSize: 13
             color: InkTokens.primaryText
             verticalAlignment: Text.AlignVCenter

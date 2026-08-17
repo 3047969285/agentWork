@@ -2,6 +2,8 @@ import QtQuick
 
 Item {
     id: root
+    enabled: false
+    z: -1
 
     Rectangle {
         anchors.fill: parent

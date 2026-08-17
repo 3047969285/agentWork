@@ -2,6 +2,7 @@ import QtQuick
 
 Item {
     id: root
+    enabled: false
 
     width: 0
     height: 0

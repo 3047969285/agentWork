@@ -3,6 +3,7 @@
 #include "hooks/StudyHook.h"
 
 #include <QQmlContext>
+#include <QQmlEngine>
 #include <QDebug>
 
 WindowController::WindowController(QObject *parent)
@@ -20,6 +21,7 @@ bool WindowController::init(ConnectionHook *connectionHook, StudyHook *studyHook
   if (studyHook != nullptr) {
     m_engine->rootContext()->setContextProperty(QStringLiteral("study"), studyHook);
   }
+  m_engine->setOutputWarningsToStandardError(false);
   m_engine->loadFromModule(QLatin1String("dsh"), QLatin1String("Main"));
   return !m_engine->rootObjects().isEmpty();
 }

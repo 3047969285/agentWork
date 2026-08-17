@@ -43,11 +43,13 @@ Item {
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 16
             color: InkTokens.cinnabar
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -6
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: study.answerApproval("allowed-once")
+            }
+            TapHandler {
+                margin: 6
+                acceptedButtons: Qt.LeftButton
+                onTapped: study.answerApproval("allowed-once")
             }
         }
         Text {
@@ -55,11 +57,13 @@ Item {
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 16
             color: InkTokens.ink500
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -6
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: study.answerApproval("rejected")
+            }
+            TapHandler {
+                margin: 6
+                acceptedButtons: Qt.LeftButton
+                onTapped: study.answerApproval("rejected")
             }
         }
     }

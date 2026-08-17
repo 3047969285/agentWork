@@ -66,10 +66,12 @@ Item {
                     rightPadding: 6
                     topPadding: 2
                     bottomPadding: 2
-                    MouseArea {
-                        anchors.fill: parent
+                    HoverHandler {
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: study.pickQuestionOption(modelData.label)
+                    }
+                    TapHandler {
+                        acceptedButtons: Qt.LeftButton
+                        onTapped: study.pickQuestionOption(modelData.label)
                     }
                 }
             }

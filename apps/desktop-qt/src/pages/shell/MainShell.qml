@@ -5,10 +5,12 @@ Item {
 
     PaperBackground {
         anchors.fill: parent
+        z: -1
     }
 
     TitleBar {
         id: titleBar
+        z: 2
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -16,6 +18,7 @@ Item {
 
     Sidebar {
         id: sidebar
+        z: 1
         anchors.top: titleBar.bottom
         anchors.left: parent.left
         anchors.bottom: parent.bottom
@@ -23,6 +26,8 @@ Item {
 
     Text {
         id: inlineStatus
+        z: 1
+        enabled: visible
         visible: typeof connection !== "undefined"
                  && (!connection.connected || connection.hasError
                      || (typeof study !== "undefined" && study.noticeText.length > 0))
@@ -44,16 +49,16 @@ Item {
                 return connection.statusText
             return ""
         }
-        MouseArea {
-            anchors.fill: parent
+        TapHandler {
             enabled: typeof study !== "undefined" && study.noticeText.length > 0
-            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: study.dismissNotice()
+            acceptedButtons: Qt.LeftButton
+            onTapped: study.dismissNotice()
         }
     }
 
     ConversationPane {
         id: scroll
+        z: 0
         anchors.top: inlineStatus.visible ? inlineStatus.bottom : titleBar.bottom
         anchors.left: sidebar.right
         anchors.right: parent.right
@@ -62,6 +67,8 @@ Item {
 
     ApprovalStrip {
         id: approvalStrip
+        z: 1
+        enabled: visible
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.bottom: questionStrip.top
@@ -69,6 +76,8 @@ Item {
 
     QuestionStrip {
         id: questionStrip
+        z: 1
+        enabled: visible
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.bottom: composer.top
@@ -76,12 +85,16 @@ Item {
 
     Composer {
         id: composer
+        z: 1
+        objectName: "composerRoot"
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.bottom: parent.bottom
     }
 
     SettingsPane {
+        z: 20
+        enabled: visible
         anchors.fill: parent
     }
 }

@@ -3,15 +3,16 @@ import QtQuick
 Item {
     id: root
     visible: typeof study !== "undefined" && study.settingsOpen
+    enabled: visible
     anchors.fill: parent
     z: 20
 
     Rectangle {
         anchors.fill: parent
         color: Qt.rgba(0.102, 0.086, 0.071, 0.18)
-        MouseArea {
-            anchors.fill: parent
-            onClicked: study.closeSettings()
+        TapHandler {
+            acceptedButtons: Qt.LeftButton
+            onTapped: study.closeSettings()
         }
     }
 
@@ -28,8 +29,8 @@ Item {
         border.color: InkTokens.hairline
         radius: 1
 
-        MouseArea {
-            anchors.fill: parent
+        TapHandler {
+            acceptedButtons: Qt.LeftButton
         }
 
         Text {
@@ -52,11 +53,13 @@ Item {
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 14
             color: InkTokens.ink500
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -8
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: study.closeSettings()
+            }
+            TapHandler {
+                margin: 8
+                acceptedButtons: Qt.LeftButton
+                onTapped: study.closeSettings()
             }
         }
 
@@ -102,11 +105,13 @@ Item {
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 14
             color: InkTokens.cinnabar
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -8
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: study.openSettingsDocument()
+            }
+            TapHandler {
+                margin: 8
+                acceptedButtons: Qt.LeftButton
+                onTapped: study.openSettingsDocument()
             }
         }
     }

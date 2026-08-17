@@ -10,7 +10,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 Network Test)
 qt_policy(SET QTP0001 NEW)
 qt_policy(SET QTP0004 NEW)
 
-qt_add_executable(dsh-desktop
+qt_add_executable(dsh-desktop WIN32
   src/main.cpp
   src/app/Application.cpp
   src/app/WindowController.cpp
@@ -54,6 +54,7 @@ qt_add_qml_module(dsh-desktop
 )
 
 target_link_libraries(dsh-desktop PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network)
+set_target_properties(dsh-desktop PROPERTIES WIN32_EXECUTABLE TRUE)
 
 if (WIN32)
   set(_dsh_windeployqt "${Qt6_DIR}/../../../bin/windeployqt.exe")

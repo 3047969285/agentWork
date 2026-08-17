@@ -10,6 +10,7 @@ Item {
         anchors.fill: parent
         color: InkTokens.sidebarWash
         opacity: 0.55
+        enabled: false
     }
 
     Column {
@@ -31,22 +32,25 @@ Item {
 
         Text {
             id: workspaceName
+            objectName: "sidebarWorkspaceTitle"
             width: parent.width
             text: (typeof study !== "undefined") ? study.workspaceTitle : qsTr("未入席")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 18
             color: InkTokens.primaryText
             elide: Text.ElideMiddle
-            MouseArea {
-                anchors.fill: parent
+            HoverHandler {
+                id: workspaceHover
                 cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
-                onClicked: root.workspaceOpen = !root.workspaceOpen
-                onContainsMouseChanged: {
+                onHoveredChanged: {
                     if (MotionBudget.hoverMs === 0)
                         return
-                    workspaceName.opacity = containsMouse ? 0.72 : 1
+                    workspaceName.opacity = hovered ? 0.72 : 1
                 }
+            }
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                onTapped: root.workspaceOpen = !root.workspaceOpen
             }
             Behavior on opacity {
                 enabled: MotionBudget.hoverMs > 0
@@ -85,10 +89,12 @@ Item {
                        ? InkTokens.cinnabar : InkTokens.ink700
                 elide: Text.ElideRight
             }
-            MouseArea {
-                anchors.fill: parent
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
+            }
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                onTapped: {
                     study.selectWorkspace(modelData.workspaceId)
                     root.workspaceOpen = false
                 }
@@ -174,18 +180,21 @@ Item {
                 elide: Text.ElideRight
             }
 
-            MouseArea {
-                anchors.fill: parent
+            HoverHandler {
+                id: rowHover
                 cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
-                onClicked: {
-                    if (typeof study !== "undefined")
-                        study.selectSession(sessionId)
-                }
-                onContainsMouseChanged: {
+                onHoveredChanged: {
                     if (rowRoot.selected || MotionBudget.hoverMs === 0)
                         return
-                    wash.color = containsMouse ? Qt.rgba(0.651, 0.239, 0.184, 0.05) : "transparent"
+                    wash.color = hovered ? Qt.rgba(0.651, 0.239, 0.184, 0.05) : "transparent"
+                }
+            }
+            TapHandler {
+                objectName: "sidebarSessionRow"
+                acceptedButtons: Qt.LeftButton
+                onTapped: {
+                    if (typeof study !== "undefined")
+                        study.selectSession(sessionId)
                 }
             }
         }
@@ -204,6 +213,7 @@ Item {
 
     Text {
         id: newSessionBtn
+        objectName: "sidebarNewSession"
         anchors.left: parent.left
         anchors.leftMargin: 18
         anchors.bottom: parent.bottom
@@ -214,12 +224,13 @@ Item {
         color: InkTokens.cinnabar
         opacity: 1
 
-        MouseArea {
-            anchors.fill: parent
-            anchors.margins: -8
+        HoverHandler {
             cursorShape: Qt.PointingHandCursor
-            hoverEnabled: true
-            onClicked: {
+        }
+        TapHandler {
+            margin: 8
+            acceptedButtons: Qt.LeftButton
+            onTapped: {
                 if (typeof study !== "undefined")
                     study.createSession()
             }

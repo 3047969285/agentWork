@@ -6,6 +6,29 @@ Item {
 
     property int activeBlooms: 0
 
+    function spawnBloom(localPos) {
+        if (MotionBudget.maxConcurrentBlooms === 0
+                || root.activeBlooms >= MotionBudget.maxConcurrentBlooms) {
+            return
+        }
+        var host = root.parent
+        if (!host)
+            return
+        var mapped = brand.mapToItem(host, localPos.x, localPos.y)
+        root.activeBlooms++
+        var bloom = bloomComponent.createObject(host, {
+            x: mapped.x,
+            y: mapped.y
+        })
+        if (!bloom) {
+            root.activeBlooms--
+            return
+        }
+        bloom.destroyed.connect(function () {
+            root.activeBlooms--
+        })
+    }
+
     Row {
         id: brandRow
         anchors.left: parent.left
@@ -20,6 +43,13 @@ Item {
             font.pixelSize: 24
             color: InkTokens.primaryText
             anchors.verticalCenter: parent.verticalCenter
+
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                onTapped: function (eventPoint) {
+                    root.spawnBloom(eventPoint.position)
+                }
+            }
         }
 
         Rectangle {
@@ -80,37 +110,17 @@ Item {
             color: InkTokens.cinnabar
             anchors.verticalCenter: parent.verticalCenter
 
-            MouseArea {
-                anchors.fill: parent
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
+            }
+            TapHandler {
+                margin: 8
+                acceptedButtons: Qt.LeftButton
+                onTapped: {
                     if (typeof connection !== "undefined")
                         connection.retry()
                 }
             }
-        }
-    }
-
-    MouseArea {
-        anchors.fill: brand
-        onClicked: function (mouse) {
-            if (MotionBudget.maxConcurrentBlooms === 0
-                    || root.activeBlooms >= MotionBudget.maxConcurrentBlooms) {
-                return
-            }
-            root.activeBlooms++
-            var host = root.parent
-            var bloom = bloomComponent.createObject(host, {
-                x: brandRow.x + mouse.x,
-                y: brandRow.y + mouse.y
-            })
-            if (!bloom) {
-                root.activeBlooms--
-                return
-            }
-            bloom.destroyed.connect(function () {
-                root.activeBlooms--
-            })
         }
     }
 
@@ -121,15 +131,18 @@ Item {
         spacing: 16
 
         Text {
+            objectName: "titleSettings"
             text: qsTr("册")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 13
             color: InkTokens.ink500
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -8
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
+            }
+            TapHandler {
+                margin: 8
+                acceptedButtons: Qt.LeftButton
+                onTapped: {
                     if (typeof study !== "undefined")
                         study.openSettings()
                 }
@@ -142,18 +155,19 @@ Item {
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 13
             color: InkTokens.ink500
-            MouseArea {
-                id: reduceHit
-                anchors.fill: parent
-                anchors.margins: -8
+            HoverHandler {
+                id: reduceHover
                 cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
-                onClicked: MotionBudget.reduceMotion = !MotionBudget.reduceMotion
+            }
+            TapHandler {
+                margin: 8
+                acceptedButtons: Qt.LeftButton
+                onTapped: MotionBudget.reduceMotion = !MotionBudget.reduceMotion
             }
         }
 
         Text {
-            visible: reduceHit.containsMouse
+            visible: reduceHover.hovered
             text: MotionBudget.reduceMotion ? qsTr("已减动效") : qsTr("减少动态效果")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 11
@@ -168,6 +182,7 @@ Item {
         height: 1
         color: InkTokens.hairline
         opacity: 0.55
+        enabled: false
     }
 
     Component {

@@ -11,6 +11,7 @@ Item {
         anchors.fill: parent
         color: InkTokens.scrollPaper
         opacity: 0.35
+        enabled: false
     }
 
     Text {
@@ -134,14 +135,15 @@ Item {
             color: InkTokens.ink900
             opacity: 0.10
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: function (mouse) {
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                onTapped: function (eventPoint) {
                     if (MotionBudget.maxConcurrentBlooms === 0)
                         return
+                    var mapped = emptyGlyph.mapToItem(root, eventPoint.position.x, eventPoint.position.y)
                     var bloom = bloomComponent.createObject(root, {
-                        x: emptyGlyph.x + mouse.x,
-                        y: emptyGlyph.y + mouse.y
+                        x: mapped.x,
+                        y: mapped.y
                     })
                     if (bloom)
                         bloom.z = 2

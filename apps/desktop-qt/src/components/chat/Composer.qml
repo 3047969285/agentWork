@@ -31,6 +31,7 @@ Item {
 
     Text {
         id: modelChip
+        objectName: "composerModel"
         anchors.left: parent.left
         anchors.leftMargin: 24
         anchors.top: parent.top
@@ -39,11 +40,13 @@ Item {
         font.family: InkTokens.calligraphyFamily
         font.pixelSize: 12
         color: InkTokens.ink500
-        MouseArea {
-            anchors.fill: parent
-            anchors.margins: -6
+        HoverHandler {
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
+        }
+        TapHandler {
+            margin: 6
+            acceptedButtons: Qt.LeftButton
+            onTapped: {
                 if (typeof study !== "undefined")
                     study.toggleModels()
             }
@@ -76,16 +79,19 @@ Item {
                 font.pixelSize: 12
                 color: InkTokens.ink700
             }
-            MouseArea {
-                anchors.fill: parent
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: study.selectModel(modelData.provider, modelData.model)
+            }
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                onTapped: study.selectModel(modelData.provider, modelData.model)
             }
         }
     }
 
     TextArea {
         id: input
+        objectName: "composerInput"
         anchors.left: parent.left
         anchors.right: sendSeal.left
         anchors.top: modelList.visible ? modelList.bottom : modelChip.bottom
@@ -114,6 +120,8 @@ Item {
 
     Rectangle {
         id: sendSeal
+        objectName: "composerSend"
+        z: 2
         width: 44
         height: 44
         radius: 2
@@ -138,11 +146,12 @@ Item {
             color: InkTokens.ink0
         }
 
-        MouseArea {
-            anchors.fill: parent
+        HoverHandler {
             cursorShape: Qt.PointingHandCursor
-            hoverEnabled: true
-            onClicked: {
+        }
+        TapHandler {
+            acceptedButtons: Qt.LeftButton
+            onTapped: {
                 if (typeof study !== "undefined" && study.sending) {
                     study.cancelTurn()
                     return

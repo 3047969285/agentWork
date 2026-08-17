@@ -208,6 +208,8 @@ void Application::doHandshake() {
                              m_connectionHook->setHostPort(m_port);
                              m_connectionHook->setStatusText(
                                  QStringLiteral("已连接 · %1 · 端口 %2").arg(version).arg(m_port));
+                             qInfo().noquote() << QStringLiteral("host.describe") << version << m_port
+                                               << m_rpcClient->baseUrl().toString();
                              connectStreams();
                              loadStudy();
                              loadHostCatalog();
@@ -257,7 +259,7 @@ void Application::onStreamOpenChanged(bool open) {
   }
 }
 
-void Application::loadStudy() {
+void Application::loadStudy(const QString &preferSessionId) {
   if (m_isStopping || !m_connectionHook->connected()) {
     return;
   }
@@ -266,9 +268,10 @@ void Application::loadStudy() {
   }
 
   const int gen = ++m_studyGeneration;
+  const QString prefer = preferSessionId;
   m_studyHook->setBusy(true);
   m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodWorkspaceList), QJsonObject{},
-                         [this, gen](bool workspaceOk, QJsonValue workspaceValue) {
+                         [this, gen, prefer](bool workspaceOk, QJsonValue workspaceValue) {
                            if (m_isStopping || gen != m_studyGeneration) {
                              return;
                            }
@@ -280,7 +283,7 @@ void Application::loadStudy() {
 
                            m_rpcClient->callUnary(
                                QString::fromLatin1(dsh::rpc::kMethodSessionList), QJsonObject{},
-                               [this, gen, workspaceList](bool sessionOk, QJsonValue sessionValue) {
+                               [this, gen, workspaceList, prefer](bool sessionOk, QJsonValue sessionValue) {
                                  if (m_isStopping || gen != m_studyGeneration) {
                                    return;
                                  }
@@ -290,13 +293,14 @@ void Application::loadStudy() {
                                    return;
                                  }
                                  if (sessionValue.isObject()) {
-                                   applyStudyLists(workspaceList, sessionValue.toObject());
+                                   applyStudyLists(workspaceList, sessionValue.toObject(), prefer);
                                  }
                                });
                          });
 }
 
-void Application::applyStudyLists(const QJsonObject &workspaceList, const QJsonObject &sessionList) {
+void Application::applyStudyLists(const QJsonObject &workspaceList, const QJsonObject &sessionList,
+                                  const QString &preferSessionId) {
   m_workspaceList = workspaceList;
   m_sessionList = sessionList;
   m_studyHook->setWorkspaces(dsh::study::workspaceRows(workspaceList));
@@ -307,24 +311,10 @@ void Application::applyStudyLists(const QJsonObject &workspaceList, const QJsonO
   m_studyHook->setWorkspaceTitle(workspace.isEmpty() ? QStringLiteral("未入席")
                                                      : dsh::study::workspaceTitle(workspace));
 
-  QSet<QString> allowIds;
-  const QSet<QString> *allowPtr = nullptr;
-  if (!workspace.isEmpty()) {
-    const QJsonArray sessionIds = workspace.value(QStringLiteral("sessionIds")).toArray();
-    for (const QJsonValue &value : sessionIds) {
-      const QString id = value.toString();
-      if (!id.isEmpty()) {
-        allowIds.insert(id);
-      }
-    }
-    allowPtr = &allowIds;
-  }
-
-  const QVariantList rows = dsh::study::sessionRows(sessionList.value(QStringLiteral("items")).toArray(),
-                                                    allowPtr, dsh::study::archivedSessionIds(workspaceList));
+  const QVariantList rows = dsh::study::visibleSessionRows(workspaceList, sessionList, workspaceId);
   m_studyHook->sessionList()->replaceAll(rows);
 
-  QString selected = m_studyHook->selectedSessionId();
+  QString selected = preferSessionId.isEmpty() ? m_studyHook->selectedSessionId() : preferSessionId;
   if (!m_studyHook->sessionList()->contains(selected)) {
     selected = m_studyHook->sessionList()->firstSessionId();
   }
@@ -391,6 +381,11 @@ void Application::onCreateRequested() {
   }
   const QString reusable = m_studyHook->sessionList()->blankSessionId();
   if (!reusable.isEmpty()) {
+    if (reusable == m_studyHook->selectedSessionId()) {
+      m_studyHook->setNoticeText(QStringLiteral("已在空白会话"));
+    } else {
+      m_studyHook->setNoticeText({});
+    }
     onSelectRequested(reusable);
     return;
   }
@@ -406,10 +401,11 @@ void Application::onCreateRequested() {
                            }
                            m_studyHook->setNoticeText({});
                            const QString createdId = resultOrError.toObject().value(QStringLiteral("sessionId")).toString();
+                           qInfo().noquote() << QStringLiteral("session.create") << createdId;
                            if (!createdId.isEmpty()) {
                              m_studyHook->setSelectedSessionId(createdId);
                            }
-                           loadStudy();
+                           loadStudy(createdId);
                          });
 }
 
@@ -458,6 +454,20 @@ void Application::onSendRequested(const QString &text) {
                                !command.value(QStringLiteral("text")).toString().isEmpty()) {
                              m_studyHook->setNoticeText(command.value(QStringLiteral("text")).toString());
                              m_studyHook->setSending(false);
+                             return;
+                           }
+                           if (!m_eventStream->isOpen()) {
+                             connectStreams();
+                             QTimer::singleShot(1200, this, [this, sessionId]() {
+                               if (m_isStopping || m_studyHook->selectedSessionId() != sessionId) {
+                                 return;
+                               }
+                               loadHistory(sessionId);
+                               if (!m_eventStream->isOpen()) {
+                                 m_studyHook->setSending(false);
+                                 m_studyHook->setNoticeText(QStringLiteral("流未通 · 点刷新"));
+                               }
+                             });
                            }
                          });
 }

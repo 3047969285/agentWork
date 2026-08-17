@@ -36,7 +36,7 @@ class Application : public QObject {
   void onRetryRequested();
   void doHandshake();
   void scheduleRetry(const QString &reason);
-  void loadStudy();
+  void loadStudy(const QString &preferSessionId = {});
   void onSelectRequested(const QString &sessionId);
   void onCreateRequested();
   void onSendRequested(const QString &text);
@@ -65,7 +65,8 @@ class Application : public QObject {
   void flushStreamDelta();
 
  private:
-  void applyStudyLists(const QJsonObject &workspaceList, const QJsonObject &sessionList);
+  void applyStudyLists(const QJsonObject &workspaceList, const QJsonObject &sessionList,
+                       const QString &preferSessionId = {});
   void loadHistory(const QString &sessionId);
   void loadModels(const QString &sessionId);
   void loadHostCatalog();

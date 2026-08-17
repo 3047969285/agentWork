@@ -8,6 +8,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QUuid>
+#include <QtGlobal>
 
 namespace {
 
@@ -119,12 +120,27 @@ bool RpcClient::parseServerResponse(const QJsonObject &response, const QString &
   return true;
 }
 
-QUrl RpcClient::unaryUrlForMethod(const QString &method) const {
-  // Wire carrier matches packages/host/apiproxy/src/fetch/client.ts callUnary:
-  // POST `/api/${method}` (method is the RpcMethodMap key, e.g. host.describe).
-  // packages/client/connection/src/api-path.ts defines API_PATH = '/api'.
-  const QString path = QString::fromLatin1(dsh::rpc::kApiPathPrefix) + QLatin1Char('/') + method;
-  return m_baseUrl.resolved(QUrl(path));
+QUrl RpcClient::unaryUrl(const QUrl &baseUrl, const QString &method) {
+  // Do not use QUrl::resolved() with `/api/host.describe`: Qt may treat the
+  // dotted segment as a host/suffix and drop the real listen port.
+  QUrl url = baseUrl;
+  url.setPath(QString::fromLatin1(dsh::rpc::kApiPathPrefix) + QLatin1Char('/') + method);
+  url.setQuery(QString());
+  url.setFragment(QString());
+  return url;
+}
+
+QUrl RpcClient::unaryUrlForMethod(const QString &method) const { return unaryUrl(m_baseUrl, method); }
+
+void RpcClient::attachLoopbackOrigin(QNetworkRequest *request) const {
+  if (request == nullptr || !m_baseUrl.isValid()) {
+    return;
+  }
+  const int port = m_baseUrl.port();
+  const QString origin = port > 0
+                             ? QStringLiteral("http://%1:%2").arg(m_baseUrl.host()).arg(port)
+                             : QStringLiteral("http://%1").arg(m_baseUrl.host());
+  request->setRawHeader(QByteArrayLiteral("Origin"), origin.toLatin1());
 }
 
 void RpcClient::callUnary(const QString &method, const QJsonValue &payload,
@@ -140,40 +156,54 @@ void RpcClient::callUnary(const QString &method, const QJsonValue &payload,
 
   QNetworkRequest networkRequest(url);
   networkRequest.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+  attachLoopbackOrigin(&networkRequest);
 
   const QByteArray body = QJsonDocument(requestObject).toJson(QJsonDocument::Compact);
+  qInfo().noquote() << QStringLiteral("rpc POST") << url.toString() << method;
   QNetworkReply *reply = m_network->post(networkRequest, body);
 
-  connect(reply, &QNetworkReply::finished, this, [reply, rpcId, done]() {
+  connect(reply, &QNetworkReply::finished, this, [reply, rpcId, method, url, done]() {
     reply->deleteLater();
-
-    if (reply->error() != QNetworkReply::NoError) {
-      done(false, networkFailure(reply));
-      return;
-    }
-
     const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    if (statusCode < 200 || statusCode >= 300) {
-      done(false, QStringLiteral("服务返回状态 %1").arg(statusCode));
-      return;
-    }
+    const QByteArray raw = reply->readAll();
+    const QNetworkReply::NetworkError netError = reply->error();
 
     QJsonParseError parseError;
-    const QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &parseError);
-    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-      done(false, QStringLiteral("响应不是有效 JSON"));
-      return;
+    const QJsonDocument document = QJsonDocument::fromJson(raw, &parseError);
+    if (parseError.error == QJsonParseError::NoError && document.isObject()) {
+      bool businessOk = false;
+      QJsonValue resultOrError;
+      QString parseMessage;
+      if (parseServerResponse(document.object(), rpcId, &businessOk, &resultOrError, &parseMessage)) {
+        if (!businessOk) {
+          const QString errDump = resultOrError.isObject()
+                                      ? QString::fromUtf8(QJsonDocument(resultOrError.toObject()).toJson(QJsonDocument::Compact))
+                                      : resultOrError.toString();
+          qWarning().noquote() << QStringLiteral("rpc fail") << method << url.toString() << statusCode << errDump;
+        }
+        done(businessOk, resultOrError);
+        return;
+      }
+      if (statusCode >= 200 && statusCode < 300) {
+        qWarning().noquote() << QStringLiteral("rpc parse") << method << parseMessage;
+        done(false, parseMessage);
+        return;
+      }
     }
 
-    bool businessOk = false;
-    QJsonValue resultOrError;
-    QString parseMessage;
-    if (!parseServerResponse(document.object(), rpcId, &businessOk, &resultOrError, &parseMessage)) {
-      done(false, parseMessage);
-      return;
+    QString message;
+    if (statusCode == 403) {
+      message = QStringLiteral("宿主拒绝了请求（403）");
+    } else if (statusCode >= 400) {
+      message = QStringLiteral("服务返回状态 %1").arg(statusCode);
+    } else if (netError != QNetworkReply::NoError) {
+      message = networkFailure(reply);
+    } else {
+      message = QStringLiteral("响应不是有效 JSON");
     }
-
-    done(businessOk, resultOrError);
+    qWarning().noquote() << QStringLiteral("rpc error") << method << url.toString() << statusCode << netError
+                         << message << QString::fromUtf8(raw.left(300));
+    done(false, message);
   });
 }
 
@@ -189,10 +219,15 @@ void RpcClient::callRespond(const QString &rpcId, const QJsonValue &value,
   }
 
   const QJsonObject requestObject = makeClientResponse(rpcId, value);
-  const QUrl url = m_baseUrl.resolved(QUrl(QString::fromLatin1(dsh::rpc::kRespondPath)));
+  QUrl url = m_baseUrl;
+  url.setPath(QString::fromLatin1(dsh::rpc::kRespondPath));
+  url.setQuery(QString());
+  url.setFragment(QString());
 
   QNetworkRequest networkRequest(url);
   networkRequest.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+  attachLoopbackOrigin(&networkRequest);
+  qInfo().noquote() << QStringLiteral("rpc POST") << url.toString() << QStringLiteral("respond");
 
   const QByteArray body = QJsonDocument(requestObject).toJson(QJsonDocument::Compact);
   QNetworkReply *reply = m_network->post(networkRequest, body);

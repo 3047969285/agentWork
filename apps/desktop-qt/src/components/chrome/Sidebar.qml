@@ -48,9 +48,13 @@ Item {
                     workspaceName.opacity = hovered ? 0.72 : 1
                 }
             }
-            TapHandler {
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -4
                 acceptedButtons: Qt.LeftButton
-                onTapped: root.workspaceOpen = !root.workspaceOpen
+                preventStealing: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.workspaceOpen = !root.workspaceOpen
             }
             Behavior on opacity {
                 enabled: MotionBudget.hoverMs > 0
@@ -92,9 +96,12 @@ Item {
             HoverHandler {
                 cursorShape: Qt.PointingHandCursor
             }
-            TapHandler {
+            MouseArea {
+                anchors.fill: parent
                 acceptedButtons: Qt.LeftButton
-                onTapped: {
+                preventStealing: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
                     study.selectWorkspace(modelData.workspaceId)
                     root.workspaceOpen = false
                 }
@@ -201,10 +208,13 @@ Item {
                     wash.color = hovered ? Qt.rgba(0.651, 0.239, 0.184, 0.05) : "transparent"
                 }
             }
-            TapHandler {
+            MouseArea {
                 objectName: "sidebarSessionRow"
+                anchors.fill: parent
                 acceptedButtons: Qt.LeftButton
-                onTapped: {
+                preventStealing: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
                     if (typeof study !== "undefined")
                         study.selectSession(sessionId)
                 }
@@ -239,10 +249,13 @@ Item {
         HoverHandler {
             cursorShape: Qt.PointingHandCursor
         }
-        TapHandler {
-            margin: 8
+        MouseArea {
+            anchors.fill: parent
+            anchors.margins: -8
             acceptedButtons: Qt.LeftButton
-            onTapped: {
+            preventStealing: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
                 if (typeof study !== "undefined")
                     study.createSession()
             }

@@ -37,6 +37,13 @@ QVariantList workspaceRows(const QJsonObject &listValue);
 QVariantList sessionRows(const QJsonArray &items, const QSet<QString> *allowIds,
                          const QSet<QString> &archived);
 
+/**
+ * Sidebar rows for the selected workspace. An empty workspace membership falls
+ * back to every non-archived root session so create/list never vanish.
+ */
+QVariantList visibleSessionRows(const QJsonObject &workspaceList, const QJsonObject &sessionList,
+                                const QString &workspaceId);
+
 /** Unwrap a history entry or a live session event to the inner event object. */
 QJsonObject unwrapEvent(const QJsonValue &entry);
 

@@ -9,6 +9,7 @@
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QDebug>
+#include <QtGlobal>
 
 HostProcess::HostProcess(QObject *parent)
     : QObject(parent)
@@ -266,6 +267,7 @@ void HostProcess::processOutputBuffer(const QByteArray &data)
         m_outputBuffer.remove(0, newlineIdx + 1);
         QString line = QString::fromUtf8(rawLine).trimmed();
         if (!line.isEmpty()) {
+            qInfo().noquote() << QStringLiteral("host") << line;
             emit logReceived(line);
             if (!m_ready) {
                 const quint16 detectedPort = parsePortFromOutput(line);

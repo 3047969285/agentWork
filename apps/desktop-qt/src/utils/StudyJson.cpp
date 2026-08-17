@@ -180,6 +180,32 @@ QVariantList workspaceRows(const QJsonObject &listValue) {
   return rows;
 }
 
+QVariantList visibleSessionRows(const QJsonObject &workspaceList, const QJsonObject &sessionList,
+                                const QString &workspaceId) {
+  const QSet<QString> archived = archivedSessionIds(workspaceList);
+  const QJsonArray items = sessionList.value(QStringLiteral("items")).toArray();
+  const QJsonObject workspace = workspaceById(workspaceList, workspaceId);
+  QSet<QString> allowIds;
+  const QSet<QString> *allowPtr = nullptr;
+  if (!workspace.isEmpty()) {
+    const QJsonArray sessionIds = workspace.value(QStringLiteral("sessionIds")).toArray();
+    for (const QJsonValue &value : sessionIds) {
+      const QString id = value.toString();
+      if (!id.isEmpty()) {
+        allowIds.insert(id);
+      }
+    }
+    if (!allowIds.isEmpty()) {
+      allowPtr = &allowIds;
+    }
+  }
+  QVariantList rows = sessionRows(items, allowPtr, archived);
+  if (rows.isEmpty() && allowPtr != nullptr) {
+    rows = sessionRows(items, nullptr, archived);
+  }
+  return rows;
+}
+
 QVariantList sessionRows(const QJsonArray &items, const QSet<QString> *allowIds,
                          const QSet<QString> &archived) {
   QVariantList rows;

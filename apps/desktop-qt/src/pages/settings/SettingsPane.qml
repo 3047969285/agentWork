@@ -5,8 +5,11 @@ Item {
     id: root
     visible: typeof study !== "undefined" && study.settingsOpen
     enabled: visible
-    anchors.fill: parent
-    z: 20
+    z: visible ? 20 : -1
+    anchors.left: parent.left
+    anchors.top: parent.top
+    width: visible ? parent.width : 0
+    height: visible ? parent.height : 0
 
     function fieldMatches(field, section) {
         return field && field.section === section

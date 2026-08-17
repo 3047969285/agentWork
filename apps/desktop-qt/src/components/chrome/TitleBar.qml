@@ -139,10 +139,13 @@ Item {
             HoverHandler {
                 cursorShape: Qt.PointingHandCursor
             }
-            TapHandler {
-                margin: 8
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -8
                 acceptedButtons: Qt.LeftButton
-                onTapped: {
+                preventStealing: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
                     if (typeof study !== "undefined")
                         study.refresh()
                 }
@@ -158,10 +161,13 @@ Item {
             HoverHandler {
                 cursorShape: Qt.PointingHandCursor
             }
-            TapHandler {
-                margin: 8
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -8
                 acceptedButtons: Qt.LeftButton
-                onTapped: {
+                preventStealing: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
                     if (typeof study !== "undefined")
                         study.openSettings()
                 }

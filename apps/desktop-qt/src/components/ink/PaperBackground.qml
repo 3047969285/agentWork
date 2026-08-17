@@ -36,7 +36,7 @@ Item {
         id: fibers
         anchors.fill: parent
         renderStrategy: Canvas.Cooperative
-        layer.enabled: true
+    layer.enabled: false
         layer.smooth: false
         layer.mipmap: false
         onWidthChanged: requestPaint()

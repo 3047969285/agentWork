@@ -22,10 +22,12 @@ Item {
     readonly property bool slashOpen: typeof study !== "undefined" && input.text.trim().startsWith("/")
 
     function submit() {
-        if (!root.canSend)
+        if (typeof study === "undefined")
             return
+        var shouldClear = root.canSend
         study.sendPrompt(input.text)
-        input.text = ""
+        if (shouldClear)
+            input.text = ""
     }
 
     function filteredSlash() {
@@ -103,10 +105,13 @@ Item {
             HoverHandler {
                 cursorShape: Qt.PointingHandCursor
             }
-            TapHandler {
-                margin: 6
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -6
                 acceptedButtons: Qt.LeftButton
-                onTapped: {
+                preventStealing: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
                     if (typeof study !== "undefined")
                         study.toggleModels()
                 }
@@ -194,9 +199,12 @@ Item {
             HoverHandler {
                 cursorShape: Qt.PointingHandCursor
             }
-            TapHandler {
+            MouseArea {
+                anchors.fill: parent
                 acceptedButtons: Qt.LeftButton
-                onTapped: study.selectModel(modelData.provider, modelData.model)
+                preventStealing: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: study.selectModel(modelData.provider, modelData.model)
             }
         }
 
@@ -344,9 +352,12 @@ Item {
         HoverHandler {
             cursorShape: Qt.PointingHandCursor
         }
-        TapHandler {
+        MouseArea {
+            anchors.fill: parent
             acceptedButtons: Qt.LeftButton
-            onTapped: {
+            preventStealing: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
                 if (typeof study !== "undefined" && study.sending) {
                     study.cancelTurn()
                     return

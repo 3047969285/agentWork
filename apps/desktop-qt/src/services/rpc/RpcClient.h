@@ -8,6 +8,7 @@
 #include <functional>
 
 class QNetworkAccessManager;
+class QNetworkRequest;
 
 class RpcClient : public QObject {
   Q_OBJECT
@@ -28,9 +29,12 @@ class RpcClient : public QObject {
   static QJsonObject makeClientResponse(const QString &rpcId, const QJsonValue &value);
   static bool parseServerResponse(const QJsonObject &response, const QString &expectedRpcId,
                                   bool *ok, QJsonValue *resultOrError, QString *errorMessage);
+  /** POST URL for `method`; keeps dotted names like `host.describe` as the path. */
+  static QUrl unaryUrl(const QUrl &baseUrl, const QString &method);
 
  private:
   QUrl unaryUrlForMethod(const QString &method) const;
+  void attachLoopbackOrigin(QNetworkRequest *request) const;
 
   QUrl m_baseUrl;
   QNetworkAccessManager *m_network = nullptr;

@@ -126,6 +126,26 @@ class TstStudyJson : public QObject {
     QCOMPARE(row.value(QStringLiteral("status")).toString(), QStringLiteral("pending"));
   }
 
+  void visibleSessionRows_fallsBackWhenWorkspaceHasNoMembers() {
+    QJsonObject workspaceList;
+    workspaceList.insert(QStringLiteral("items"),
+                         QJsonArray{QJsonObject{{QStringLiteral("workspaceId"), QStringLiteral("w1")},
+                                                {QStringLiteral("title"), QStringLiteral("东斋")},
+                                                {QStringLiteral("path"), QStringLiteral("/tmp")},
+                                                {QStringLiteral("sessionIds"), QJsonArray{}},
+                                                {QStringLiteral("createdAt"), QStringLiteral("t")},
+                                                {QStringLiteral("updatedAt"), QStringLiteral("t")}}});
+    QJsonObject sessionList;
+    sessionList.insert(QStringLiteral("items"),
+                       QJsonArray{QJsonObject{{QStringLiteral("sessionId"), QStringLiteral("s1")},
+                                              {QStringLiteral("blank"), true},
+                                              {QStringLiteral("running"), false}}});
+    const QVariantList rows =
+        dsh::study::visibleSessionRows(workspaceList, sessionList, QStringLiteral("w1"));
+    QCOMPARE(rows.size(), 1);
+    QCOMPARE(rows.at(0).toMap().value(QStringLiteral("sessionId")).toString(), QStringLiteral("s1"));
+  }
+
   void workspaceRows_keepsIdAndTitle() {
     QJsonObject list;
     list.insert(QStringLiteral("items"),

@@ -104,12 +104,14 @@ Item {
     SettingsPane {
         z: 20
         enabled: visible
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.top: parent.top
     }
 
     OnboardingPane {
         z: 30
         enabled: visible
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.top: parent.top
     }
 }

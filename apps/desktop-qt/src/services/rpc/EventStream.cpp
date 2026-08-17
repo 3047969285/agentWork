@@ -7,6 +7,7 @@
 #include <QRandomGenerator>
 #include <QTcpSocket>
 #include <QtEndian>
+#include <QtGlobal>
 
 namespace {
 
@@ -21,12 +22,16 @@ QByteArray randomKey() {
 }
 
 QUrl wsUrl(const QUrl &httpBase, const char *path) {
-  QUrl url = httpBase.resolved(QUrl(QString::fromLatin1(path)));
-  if (url.scheme() == QLatin1String("https")) {
-    url.setScheme(QStringLiteral("wss"));
-  } else {
-    url.setScheme(QStringLiteral("ws"));
+  QUrl url = httpBase;
+  // Keep the HTTP listen port. QUrl::setScheme("ws") can reset it to 80.
+  const int port = httpBase.port();
+  url.setScheme(QStringLiteral("ws"));
+  if (port > 0) {
+    url.setPort(port);
   }
+  url.setPath(QString::fromLatin1(path));
+  url.setQuery(QString());
+  url.setFragment(QString());
   return url;
 }
 
@@ -45,13 +50,15 @@ class EventStream::Downlink : public QObject {
   void open(const QUrl &httpBase) {
     close();
     m_url = wsUrl(httpBase, m_mux ? dsh::rpc::kMuxEventsPath : dsh::rpc::kHostEventsPath);
+    m_httpOrigin = QStringLiteral("http://%1:%2").arg(httpBase.host()).arg(httpBase.port());
     m_key = randomKey();
     m_handshakeDone = false;
     m_header.clear();
     m_buffer.clear();
     m_textCarry.clear();
-    const QString host = m_url.host();
-    const quint16 port = static_cast<quint16>(m_url.port(80));
+    const QString host = httpBase.host();
+    const quint16 port = static_cast<quint16>(httpBase.port());
+    qInfo().noquote() << QStringLiteral("ws connect") << m_url.toString() << host << port;
     m_socket->connectToHost(host, port);
   }
 
@@ -73,7 +80,8 @@ class EventStream::Downlink : public QObject {
  private:
   void onConnected() {
     const QByteArray path = m_url.path(QUrl::FullyEncoded).toUtf8();
-    const QByteArray host = m_url.host().toUtf8() + ':' + QByteArray::number(m_url.port(80));
+    const QByteArray host =
+        m_url.host().toUtf8() + ':' + QByteArray::number(m_url.port() > 0 ? m_url.port() : 80);
     QByteArray req;
     req += "GET ";
     req += path.isEmpty() ? QByteArray("/") : path;
@@ -81,8 +89,8 @@ class EventStream::Downlink : public QObject {
     req += "Host: ";
     req += host;
     req += "\r\n";
-    req += "Origin: http://";
-    req += host;
+    req += "Origin: ";
+    req += m_httpOrigin.toUtf8();
     req += "\r\n";
     req += "Upgrade: websocket\r\n";
     req += "Connection: Upgrade\r\n";
@@ -104,10 +112,13 @@ class EventStream::Downlink : public QObject {
       m_header = m_buffer.left(split);
       m_buffer.remove(0, split + 4);
       if (!m_header.startsWith("HTTP/1.1 101") && !m_header.startsWith("HTTP/1.0 101")) {
-        emit m_owner->errorOccurred(QStringLiteral("事件流握手失败"));
+        const QString firstLine = QString::fromUtf8(m_header.left(m_header.indexOf('\r')));
+        qWarning().noquote() << QStringLiteral("ws handshake") << m_url.toString() << firstLine;
+        emit m_owner->errorOccurred(QStringLiteral("事件流握手失败：%1").arg(firstLine));
         close();
         return;
       }
+      qInfo().noquote() << QStringLiteral("ws open") << m_url.toString();
       m_handshakeDone = true;
       m_owner->emitOpenIfNeeded();
     }
@@ -267,6 +278,7 @@ class EventStream::Downlink : public QObject {
   bool m_mux = true;
   QTcpSocket *m_socket = nullptr;
   QUrl m_url;
+  QString m_httpOrigin;
   QByteArray m_key;
   QByteArray m_header;
   QByteArray m_buffer;

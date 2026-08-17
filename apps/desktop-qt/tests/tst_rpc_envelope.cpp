@@ -66,6 +66,14 @@ class TstRpcEnvelope : public QObject {
     QVERIFY(errorMessage.isEmpty());
   }
 
+  void unaryUrl_keepsDottedMethodAndPort() {
+    const QUrl url = RpcClient::unaryUrl(QUrl(QStringLiteral("http://127.0.0.1:3080")),
+                                         QString::fromLatin1(dsh::rpc::kMethodHostDescribe));
+    QCOMPARE(url.port(), 3080);
+    QCOMPARE(url.path(), QStringLiteral("/api/host.describe"));
+    QCOMPARE(url.toString(), QStringLiteral("http://127.0.0.1:3080/api/host.describe"));
+  }
+
   void makeClientResponse_echoesRpcIdAndValue() {
     const QJsonObject response =
         RpcClient::makeClientResponse(QStringLiteral("rpc-1"), QJsonObject{{QStringLiteral("outcome"), QStringLiteral("allowed-once")}});

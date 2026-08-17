@@ -146,6 +146,108 @@ class TstStudyJson : public QObject {
     rows.append(QVariantMap{{QStringLiteral("sessionId"), QStringLiteral("b")}, {QStringLiteral("blank"), true}});
     QCOMPARE(dsh::study::blankSessionId(rows), QStringLiteral("b"));
   }
+
+  void settingsFields_readsPrimitiveAndSecret() {
+    QJsonObject describe;
+    describe.insert(QStringLiteral("writable"), true);
+    QJsonObject schema;
+    schema.insert(QStringLiteral("type"), QStringLiteral("object"));
+    QJsonObject dict;
+    dict.insert(QStringLiteral("preference"),
+                QJsonObject{{QStringLiteral("type"), QStringLiteral("union")},
+                            {QStringLiteral("list"),
+                             QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("const")},
+                                                    {QStringLiteral("value"), QStringLiteral("light")}},
+                                        QJsonObject{{QStringLiteral("type"), QStringLiteral("const")},
+                                                    {QStringLiteral("value"), QStringLiteral("dark")}}}}});
+    dict.insert(QStringLiteral("timeoutMs"), QJsonObject{{QStringLiteral("type"), QStringLiteral("number")}});
+    schema.insert(QStringLiteral("dict"), dict);
+    QJsonObject ns;
+    ns.insert(QStringLiteral("ns"), QStringLiteral("ui-theme"));
+    ns.insert(QStringLiteral("schema"), schema);
+    ns.insert(QStringLiteral("value"), QJsonObject{{QStringLiteral("preference"), QStringLiteral("light")},
+                                                   {QStringLiteral("timeoutMs"), 10}});
+    ns.insert(QStringLiteral("applies"), QStringLiteral("live"));
+    ns.insert(QStringLiteral("revision"), 3);
+    ns.insert(QStringLiteral("secrets"),
+              QJsonArray{QJsonObject{{QStringLiteral("path"), QJsonArray{QStringLiteral("apiKey")}},
+                                     {QStringLiteral("set"), true}}});
+    describe.insert(QStringLiteral("namespaces"), QJsonArray{ns});
+    const QVariantList fields = dsh::study::settingsFields(describe);
+    QVERIFY(fields.size() >= 3);
+    bool sawEnum = false;
+    bool sawSecret = false;
+    for (const QVariant &fieldValue : fields) {
+      const QVariantMap field = fieldValue.toMap();
+      if (field.value(QStringLiteral("key")).toString() == QLatin1String("preference")) {
+        QCOMPARE(field.value(QStringLiteral("kind")).toString(), QStringLiteral("enum"));
+        QCOMPARE(field.value(QStringLiteral("section")).toString(), QStringLiteral("general"));
+        sawEnum = true;
+      }
+      if (field.value(QStringLiteral("kind")).toString() == QLatin1String("secret")) {
+        QVERIFY(field.value(QStringLiteral("secretSet")).toBool());
+        sawSecret = true;
+      }
+    }
+    QVERIFY(sawEnum);
+    QVERIFY(sawSecret);
+  }
+
+  void promptPayload_includesImages() {
+    QVariantList images;
+    images.append(QVariantMap{{QStringLiteral("mediaType"), QStringLiteral("image/png")},
+                              {QStringLiteral("data"), QStringLiteral("YWJj")},
+                              {QStringLiteral("name"), QStringLiteral("a.png")}});
+    const QJsonObject payload = dsh::study::promptPayload(QStringLiteral("sid"), QStringLiteral("看图"), images);
+    const QJsonArray content = payload.value(QStringLiteral("content")).toArray();
+    QCOMPARE(content.size(), 2);
+    QCOMPARE(content.at(1).toObject().value(QStringLiteral("type")).toString(), QStringLiteral("image"));
+  }
+
+  void permissionAndSlashCatalog() {
+    QCOMPARE(dsh::study::permissionLabel(QStringLiteral("danger-full-access")), QStringLiteral("完全访问"));
+    QVariantList skills;
+    skills.append(QVariantMap{{QStringLiteral("name"), QStringLiteral("review")},
+                              {QStringLiteral("description"), QStringLiteral("审稿")}});
+    QVariantList permissions;
+    permissions.append(QVariantMap{{QStringLiteral("id"), QStringLiteral("read-only")},
+                                   {QStringLiteral("label"), QStringLiteral("只读")}});
+    const QVariantList items = dsh::study::slashItems(skills, permissions, true);
+    QCOMPARE(items.at(0).toMap().value(QStringLiteral("line")).toString(), QStringLiteral("/plan off"));
+    QVERIFY(items.size() >= 3);
+  }
+
+  void apiKeyAndOnboarding() {
+    QVERIFY(dsh::study::apiKeyFailure(QString()).isEmpty());
+    QVERIFY(!dsh::study::apiKeyFailure(QStringLiteral("DEEPSEEK_API_KEY=sk")).isEmpty());
+    QVERIFY(dsh::study::apiKeyFailure(QStringLiteral("sk-live")).isEmpty());
+    QVariantList providers;
+    providers.append(QVariantMap{{QStringLiteral("official"), true},
+                                 {QStringLiteral("active"), true},
+                                 {QStringLiteral("configured"), false},
+                                 {QStringLiteral("credentialWritable"), true},
+                                 {QStringLiteral("usable"), false}});
+    QVERIFY(dsh::study::onboardingNeeded(providers));
+    providers[0] = QVariantMap{{QStringLiteral("official"), true},
+                               {QStringLiteral("active"), true},
+                               {QStringLiteral("configured"), true},
+                               {QStringLiteral("credentialWritable"), true},
+                               {QStringLiteral("usable"), true}};
+    QVERIFY(!dsh::study::onboardingNeeded(providers));
+  }
+
+  void jobRowsAndImageType() {
+    QJsonArray jobs;
+    jobs.append(QJsonObject{{QStringLiteral("id"), QStringLiteral("bash-1")},
+                            {QStringLiteral("kind"), QStringLiteral("bash")},
+                            {QStringLiteral("label"), QStringLiteral("ls")},
+                            {QStringLiteral("status"), QStringLiteral("running")}});
+    const QVariantList rows = dsh::study::jobRows(jobs);
+    QCOMPARE(rows.size(), 1);
+    QCOMPARE(rows.at(0).toMap().value(QStringLiteral("statusLabel")).toString(), QStringLiteral("进行中"));
+    QCOMPARE(dsh::study::imageMediaType(QStringLiteral("C:/a.PNG")), QStringLiteral("image/png"));
+    QVERIFY(dsh::study::imageMediaType(QStringLiteral("C:/a.txt")).isEmpty());
+  }
 };
 
 QTEST_MAIN(TstStudyJson)

@@ -80,6 +80,15 @@ Item {
         enabled: visible
         anchors.left: sidebar.right
         anchors.right: parent.right
+        anchors.bottom: jobStrip.top
+    }
+
+    JobStrip {
+        id: jobStrip
+        z: 1
+        enabled: visible
+        anchors.left: sidebar.right
+        anchors.right: parent.right
         anchors.bottom: composer.top
     }
 
@@ -94,6 +103,12 @@ Item {
 
     SettingsPane {
         z: 20
+        enabled: visible
+        anchors.fill: parent
+    }
+
+    OnboardingPane {
+        z: 30
         enabled: visible
         anchors.fill: parent
     }

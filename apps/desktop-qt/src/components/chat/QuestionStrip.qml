@@ -25,7 +25,11 @@ Item {
         spacing: 8
 
         Text {
-            text: (root.q.header ? root.q.header + " · " : "") + (root.q.index ? (root.q.index + "/" + root.q.total) : "")
+            text: {
+                if (root.q.intentKind === "plan-review")
+                    return qsTr("计划待审") + (root.q.index ? " · " + root.q.index + "/" + root.q.total : "")
+                return (root.q.header ? root.q.header + " · " : "") + (root.q.index ? (root.q.index + "/" + root.q.total) : "")
+            }
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 11
             color: InkTokens.ink500

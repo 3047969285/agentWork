@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 Network Test)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 Network Test)
 qt_policy(SET QTP0001 NEW)
 qt_policy(SET QTP0004 NEW)
 
@@ -49,11 +49,13 @@ qt_add_qml_module(dsh-desktop
     src/components/chat/ToolCard.qml
     src/components/chat/ApprovalStrip.qml
     src/components/chat/QuestionStrip.qml
+    src/components/chat/JobStrip.qml
     src/pages/shell/MainShell.qml
     src/pages/settings/SettingsPane.qml
+    src/pages/settings/OnboardingPane.qml
 )
 
-target_link_libraries(dsh-desktop PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network)
+target_link_libraries(dsh-desktop PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::Network)
 set_target_properties(dsh-desktop PROPERTIES WIN32_EXECUTABLE TRUE)
 
 if (WIN32)

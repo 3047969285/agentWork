@@ -50,14 +50,41 @@ QString eventText(const QJsonObject &data);
 QVariantMap toolRow(const QJsonObject &event, const QJsonValue &view);
 
 QJsonObject promptPayload(const QString &sessionId, const QString &text);
+QJsonObject promptPayload(const QString &sessionId, const QString &text, const QVariantList &images);
 QJsonObject createPayload(const QString &workspaceId);
 QJsonObject modelsPayload(const QString &sessionId);
 QJsonObject selectModelPayload(const QString &sessionId, const QString &provider, const QString &model);
 QJsonObject cancelPayload(const QString &sessionId);
+QJsonObject settingsUpdatePayload(const QString &ns, const QString &key, const QJsonValue &value, int revision);
+QJsonObject credentialsDescribePayload(const QStringList &refs);
+QJsonObject credentialsSetPayload(const QString &ref, const QString &value);
+QJsonObject skillListPayload(const QString &sessionId);
+QJsonObject subagentListPayload(const QString &parentSessionId);
+QJsonObject subagentInterruptPayload(const QString &parentSessionId, const QString &childSessionId);
+QJsonObject agentPresetSelectPayload(const QString &sessionId, const QString &agentPreset);
 
 QVariantList modelOptions(const QJsonObject &modelsValue);
 QString modelLabel(const QJsonObject &modelsValue);
 QVariantList settingsNamespaces(const QJsonObject &describeValue);
+QVariantList settingsFields(const QJsonObject &describeValue);
+QVariantList providerRows(const QJsonObject &providersValue, const QJsonObject &describeValue,
+                          const QJsonObject &credentialsValue);
+QVariantList skillRows(const QJsonObject &listValue);
+QVariantList subagentRows(const QJsonObject &listValue);
+QVariantList presetRows(const QJsonObject &listValue);
+QVariantList jobRows(const QJsonArray &jobs);
+QVariantList permissionOptions(const QJsonValue &projectionValue, const QJsonObject &describeValue);
+QString permissionLabel(const QString &id);
+QVariantMap planState(const QJsonValue &projectionValue);
+QVariantMap imageLimits(const QJsonValue &projectionValue);
+QVariantList slashItems(const QVariantList &skills, const QVariantList &permissions, bool planActive);
+QString namespaceTitle(const QString &ns);
+QString fieldTitle(const QString &key);
+QString appliesLabel(const QString &applies);
+QString jobStatusLabel(const QString &status);
+QString apiKeyFailure(const QString &draft);
+QString imageMediaType(const QString &path);
+bool onboardingNeeded(const QVariantList &providers);
 
 /** First blank row's sessionId, or empty. */
 QString blankSessionId(const QVariantList &rows);

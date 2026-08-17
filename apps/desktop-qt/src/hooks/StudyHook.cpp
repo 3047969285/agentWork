@@ -8,7 +8,10 @@ StudyHook::StudyHook(QObject *parent)
       m_sessions(new SessionListModel(this)),
       m_transcript(new TranscriptModel(this)),
       m_workspaceTitle(QStringLiteral("未入席")),
-      m_modelLabel(QStringLiteral("模型")) {}
+      m_modelLabel(QStringLiteral("模型")),
+      m_settingsTab(QStringLiteral("overview")),
+      m_permissionLabel(QStringLiteral("权限")),
+      m_onboardingKeyRef(QStringLiteral("DEEPSEEK_API_KEY")) {}
 
 QString StudyHook::workspaceTitle() const { return m_workspaceTitle; }
 QString StudyHook::workspaceId() const { return m_workspaceId; }
@@ -32,6 +35,22 @@ bool StudyHook::settingsOpen() const { return m_settingsOpen; }
 bool StudyHook::settingsWritable() const { return m_settingsWritable; }
 bool StudyHook::settingsHasDocument() const { return m_settingsHasDocument; }
 QVariantList StudyHook::settingsNamespaces() const { return m_settingsNamespaces; }
+QVariantList StudyHook::settingsFields() const { return m_settingsFields; }
+QString StudyHook::settingsTab() const { return m_settingsTab; }
+QVariantList StudyHook::providerRows() const { return m_providerRows; }
+QVariantList StudyHook::skills() const { return m_skills; }
+QVariantList StudyHook::subagents() const { return m_subagents; }
+QVariantList StudyHook::agentPresets() const { return m_agentPresets; }
+QVariantList StudyHook::permissionOptions() const { return m_permissionOptions; }
+QString StudyHook::permissionLabel() const { return m_permissionLabel; }
+bool StudyHook::permissionsOpen() const { return m_permissionsOpen; }
+bool StudyHook::planActive() const { return m_planActive; }
+bool StudyHook::planKnown() const { return m_planKnown; }
+QVariantList StudyHook::jobs() const { return m_jobs; }
+QVariantList StudyHook::attachments() const { return m_attachments; }
+QVariantList StudyHook::slashItems() const { return m_slashItems; }
+bool StudyHook::onboardingOpen() const { return m_onboardingOpen; }
+QString StudyHook::onboardingKeyRef() const { return m_onboardingKeyRef; }
 bool StudyHook::streamOpen() const { return m_streamOpen; }
 
 void StudyHook::setWorkspaceTitle(const QString &title) {
@@ -160,6 +179,118 @@ void StudyHook::setSettingsNamespaces(const QVariantList &namespaces) {
   }
 }
 
+void StudyHook::setSettingsFields(const QVariantList &fields) {
+  if (m_settingsFields != fields) {
+    m_settingsFields = fields;
+    emit settingsFieldsChanged();
+  }
+}
+
+void StudyHook::setSettingsTab(const QString &tab) {
+  if (m_settingsTab != tab) {
+    m_settingsTab = tab;
+    emit settingsTabChanged();
+  }
+}
+
+void StudyHook::setProviderRows(const QVariantList &rows) {
+  if (m_providerRows != rows) {
+    m_providerRows = rows;
+    emit providerRowsChanged();
+  }
+}
+
+void StudyHook::setSkills(const QVariantList &skills) {
+  if (m_skills != skills) {
+    m_skills = skills;
+    emit skillsChanged();
+  }
+}
+
+void StudyHook::setSubagents(const QVariantList &subagents) {
+  if (m_subagents != subagents) {
+    m_subagents = subagents;
+    emit subagentsChanged();
+  }
+}
+
+void StudyHook::setAgentPresets(const QVariantList &presets) {
+  if (m_agentPresets != presets) {
+    m_agentPresets = presets;
+    emit agentPresetsChanged();
+  }
+}
+
+void StudyHook::setPermissionOptions(const QVariantList &options) {
+  if (m_permissionOptions != options) {
+    m_permissionOptions = options;
+    emit permissionOptionsChanged();
+  }
+}
+
+void StudyHook::setPermissionLabel(const QString &label) {
+  if (m_permissionLabel != label) {
+    m_permissionLabel = label;
+    emit permissionLabelChanged();
+  }
+}
+
+void StudyHook::setPermissionsOpen(bool open) {
+  if (m_permissionsOpen != open) {
+    m_permissionsOpen = open;
+    emit permissionsOpenChanged();
+  }
+}
+
+void StudyHook::setPlanActive(bool active) {
+  if (m_planActive != active) {
+    m_planActive = active;
+    emit planActiveChanged();
+  }
+}
+
+void StudyHook::setPlanKnown(bool known) {
+  if (m_planKnown != known) {
+    m_planKnown = known;
+    emit planKnownChanged();
+  }
+}
+
+void StudyHook::setJobs(const QVariantList &jobs) {
+  if (m_jobs != jobs) {
+    m_jobs = jobs;
+    emit jobsChanged();
+  }
+}
+
+void StudyHook::setAttachments(const QVariantList &attachments) {
+  if (m_attachments != attachments) {
+    m_attachments = attachments;
+    emit attachmentsChanged();
+  }
+}
+
+void StudyHook::setSlashItems(const QVariantList &items) {
+  if (m_slashItems != items) {
+    m_slashItems = items;
+    emit slashItemsChanged();
+  }
+}
+
+void StudyHook::setOnboardingOpen(bool open) {
+  if (m_onboardingOpen != open) {
+    m_onboardingOpen = open;
+    emit onboardingOpenChanged();
+  }
+}
+
+void StudyHook::setOnboardingKeyRef(const QString &ref) {
+  if (m_onboardingKeyRef != ref) {
+    m_onboardingKeyRef = ref;
+    emit onboardingKeyRefChanged();
+  }
+}
+
 void StudyHook::setStreamOpen(bool open) {
   if (m_streamOpen != open) {
     m_streamOpen = open;
@@ -176,13 +307,7 @@ void StudyHook::selectSession(const QString &sessionId) {
 
 void StudyHook::createSession() { emit createRequested(); }
 
-void StudyHook::sendPrompt(const QString &text) {
-  const QString trimmed = text.trimmed();
-  if (trimmed.isEmpty()) {
-    return;
-  }
-  emit sendRequested(trimmed);
-}
+void StudyHook::sendPrompt(const QString &text) { emit sendRequested(text); }
 
 void StudyHook::refresh() { emit refreshRequested(); }
 
@@ -227,3 +352,77 @@ void StudyHook::closeSettings() { setSettingsOpen(false); }
 void StudyHook::openSettingsDocument() { emit settingsDocumentRequested(); }
 
 void StudyHook::dismissNotice() { setNoticeText({}); }
+
+void StudyHook::setSettingsSection(const QString &tab) {
+  if (!tab.isEmpty()) {
+    setSettingsTab(tab);
+  }
+}
+
+void StudyHook::updateSetting(const QString &ns, const QString &key, const QString &kind, const QVariant &value) {
+  if (ns.isEmpty() || key.isEmpty()) {
+    return;
+  }
+  emit settingsUpdateRequested(ns, key, kind, value);
+}
+
+void StudyHook::setCredential(const QString &ref, const QString &value) {
+  if (ref.isEmpty() || value.isEmpty()) {
+    return;
+  }
+  emit credentialSetRequested(ref, value);
+}
+
+void StudyHook::selectPermission(const QString &preset) {
+  if (preset.isEmpty()) {
+    return;
+  }
+  setPermissionsOpen(false);
+  emit permissionRequested(preset);
+}
+
+void StudyHook::togglePermissions() { setPermissionsOpen(!m_permissionsOpen); }
+
+void StudyHook::togglePlan() { emit planToggleRequested(); }
+
+void StudyHook::selectPreset(const QString &id) {
+  if (id.isEmpty()) {
+    return;
+  }
+  emit presetRequested(id);
+}
+
+void StudyHook::attachFromUrl(const QUrl &url) {
+  if (!url.isValid()) {
+    return;
+  }
+  emit attachRequested(url);
+}
+
+void StudyHook::removeAttachment(int index) {
+  if (index < 0) {
+    return;
+  }
+  emit attachmentRemoveRequested(index);
+}
+
+void StudyHook::pickSlash(const QString &line) {
+  if (line.trimmed().isEmpty()) {
+    return;
+  }
+  emit slashPicked(line);
+}
+
+void StudyHook::interruptSubagent(const QString &childId) {
+  if (childId.isEmpty()) {
+    return;
+  }
+  emit subagentInterruptRequested(childId);
+}
+
+void StudyHook::submitApiKey(const QString &key) { emit onboardingKeyRequested(key); }
+
+void StudyHook::dismissOnboarding() {
+  setOnboardingOpen(false);
+  emit onboardingDismissRequested();
+}

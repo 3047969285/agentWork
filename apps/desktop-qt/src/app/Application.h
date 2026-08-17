@@ -2,10 +2,12 @@
 
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QJsonValue>
 #include <QObject>
 #include <QString>
 #include <QTimer>
 #include <QUrl>
+#include <QVariant>
 #include <QVariantMap>
 
 class HostProcess;
@@ -47,6 +49,16 @@ class Application : public QObject {
   void onQuestionCustomRequested(const QString &text);
   void onSettingsOpenRequested();
   void onSettingsDocumentRequested();
+  void onSettingsUpdateRequested(const QString &ns, const QString &key, const QString &kind, const QVariant &value);
+  void onCredentialSetRequested(const QString &ref, const QString &value);
+  void onPermissionRequested(const QString &preset);
+  void onPlanToggleRequested();
+  void onPresetRequested(const QString &id);
+  void onAttachRequested(const QUrl &url);
+  void onAttachmentRemoveRequested(int index);
+  void onSlashPicked(const QString &line);
+  void onSubagentInterruptRequested(const QString &childId);
+  void onOnboardingKeyRequested(const QString &key);
   void onMuxFrame(const QString &rpcId, const QJsonObject &payload);
   void onHostFrame(const QString &rpcId, const QJsonObject &payload);
   void onStreamOpenChanged(bool open);
@@ -56,6 +68,10 @@ class Application : public QObject {
   void applyStudyLists(const QJsonObject &workspaceList, const QJsonObject &sessionList);
   void loadHistory(const QString &sessionId);
   void loadModels(const QString &sessionId);
+  void loadHostCatalog();
+  void loadSessionExtras(const QString &sessionId);
+  void refreshSlashItems();
+  void applyProjection(const QString &key, const QJsonValue &value);
   void connectStreams();
   void applySelectedSession(const QString &sessionId);
   QString titleForSession(const QString &sessionId) const;
@@ -76,8 +92,12 @@ class Application : public QObject {
   bool m_isStopping = false;
   int m_studyGeneration = 0;
   int m_historyGeneration = 0;
+  int m_catalogGeneration = 0;
   QJsonObject m_workspaceList;
   QJsonObject m_sessionList;
+  QJsonObject m_settingsDescribe;
+  QJsonValue m_permissionProjection;
+  QVariantMap m_imageLimits;
   QString m_pendingDelta;
   QJsonArray m_questionItems;
   QJsonArray m_questionAnswers;

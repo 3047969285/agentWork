@@ -1,23 +1,45 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 
 Item {
     id: root
-    height: 108 + (modelsOpen ? Math.min(160, modelList.contentHeight + 8) : 0)
+    height: 108
+            + (modelsOpen ? Math.min(160, modelList.contentHeight + 8) : 0)
+            + (permissionsOpen ? Math.min(120, permissionList.contentHeight + 8) : 0)
+            + (slashOpen ? Math.min(140, slashList.contentHeight + 8) : 0)
+            + (hasAttachments ? 28 : 0)
 
+    readonly property bool hasAttachments: typeof study !== "undefined" && study.attachments.length > 0
     readonly property bool canSend: typeof connection !== "undefined"
                                     && connection.connected
                                     && typeof study !== "undefined"
                                     && study.selectedSessionId.length > 0
                                     && !study.sending
-                                    && input.text.trim().length > 0
+                                    && (input.text.trim().length > 0 || root.hasAttachments)
     readonly property bool modelsOpen: typeof study !== "undefined" && study.modelsOpen
+    readonly property bool permissionsOpen: typeof study !== "undefined" && study.permissionsOpen
+    readonly property bool slashOpen: typeof study !== "undefined" && input.text.trim().startsWith("/")
 
     function submit() {
         if (!root.canSend)
             return
         study.sendPrompt(input.text)
         input.text = ""
+    }
+
+    function filteredSlash() {
+        if (typeof study === "undefined")
+            return []
+        var needle = input.text.trim()
+        var source = study.slashItems
+        var out = []
+        for (var i = 0; i < source.length; ++i) {
+            var item = source[i]
+            if (!needle || String(item.line).indexOf(needle) === 0 || String(item.title).indexOf(needle.substring(1)) >= 0)
+                out.push(item)
+        }
+        return out
     }
 
     Rectangle {
@@ -29,26 +51,116 @@ Item {
         opacity: 0.65
     }
 
-    Text {
-        id: modelChip
-        objectName: "composerModel"
+    Row {
+        id: chips
         anchors.left: parent.left
         anchors.leftMargin: 24
         anchors.top: parent.top
         anchors.topMargin: 8
-        text: (typeof study !== "undefined") ? study.modelLabel : qsTr("模型")
-        font.family: InkTokens.calligraphyFamily
-        font.pixelSize: 12
-        color: InkTokens.ink500
-        HoverHandler {
-            cursorShape: Qt.PointingHandCursor
+        spacing: 14
+
+        Text {
+            visible: typeof study !== "undefined" && study.planKnown
+            text: (typeof study !== "undefined" && study.planActive) ? qsTr("计划中") : qsTr("计划")
+            font.family: InkTokens.calligraphyFamily
+            font.pixelSize: 12
+            color: (typeof study !== "undefined" && study.planActive) ? InkTokens.cinnabar : InkTokens.ink500
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                margin: 6
+                acceptedButtons: Qt.LeftButton
+                onTapped: study.togglePlan()
+            }
         }
-        TapHandler {
-            margin: 6
-            acceptedButtons: Qt.LeftButton
-            onTapped: {
-                if (typeof study !== "undefined")
-                    study.toggleModels()
+
+        Text {
+            objectName: "composerPermission"
+            text: (typeof study !== "undefined") ? study.permissionLabel : qsTr("权限")
+            font.family: InkTokens.calligraphyFamily
+            font.pixelSize: 12
+            color: InkTokens.ink500
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                margin: 6
+                acceptedButtons: Qt.LeftButton
+                onTapped: {
+                    if (typeof study !== "undefined")
+                        study.togglePermissions()
+                }
+            }
+        }
+
+        Text {
+            objectName: "composerModel"
+            text: (typeof study !== "undefined") ? study.modelLabel : qsTr("模型")
+            font.family: InkTokens.calligraphyFamily
+            font.pixelSize: 12
+            color: InkTokens.ink500
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                margin: 6
+                acceptedButtons: Qt.LeftButton
+                onTapped: {
+                    if (typeof study !== "undefined")
+                        study.toggleModels()
+                }
+            }
+        }
+
+        Text {
+            text: qsTr("附页")
+            font.family: InkTokens.calligraphyFamily
+            font.pixelSize: 12
+            color: InkTokens.ink500
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                margin: 6
+                acceptedButtons: Qt.LeftButton
+                onTapped: picker.open()
+            }
+        }
+    }
+
+    ListView {
+        id: permissionList
+        visible: root.permissionsOpen
+        anchors.left: parent.left
+        anchors.right: sendSeal.left
+        anchors.top: chips.bottom
+        anchors.topMargin: 4
+        height: visible ? Math.min(112, contentHeight) : 0
+        clip: true
+        reuseItems: true
+        cacheBuffer: 80
+        boundsBehavior: Flickable.StopAtBounds
+        model: (typeof study !== "undefined") ? study.permissionOptions : []
+        delegate: Item {
+            required property var modelData
+            width: permissionList.width
+            height: 26
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 24
+                text: (modelData.current ? "· " : "") + modelData.label
+                font.family: InkTokens.calligraphyFamily
+                font.pixelSize: 12
+                color: modelData.current ? InkTokens.cinnabar : InkTokens.ink700
+            }
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                onTapped: study.selectPermission(modelData.id)
             }
         }
     }
@@ -58,7 +170,7 @@ Item {
         visible: root.modelsOpen
         anchors.left: parent.left
         anchors.right: sendSeal.left
-        anchors.top: modelChip.bottom
+        anchors.top: permissionList.visible ? permissionList.bottom : chips.bottom
         anchors.topMargin: 4
         height: visible ? Math.min(148, contentHeight) : 0
         clip: true
@@ -100,12 +212,84 @@ Item {
         }
     }
 
+    ListView {
+        id: slashList
+        visible: root.slashOpen
+        anchors.left: parent.left
+        anchors.right: sendSeal.left
+        anchors.top: modelList.visible ? modelList.bottom : (permissionList.visible ? permissionList.bottom : chips.bottom)
+        anchors.topMargin: 4
+        height: visible ? Math.min(132, contentHeight) : 0
+        clip: true
+        reuseItems: true
+        cacheBuffer: 80
+        boundsBehavior: Flickable.StopAtBounds
+        model: root.filteredSlash()
+        delegate: Item {
+            required property var modelData
+            width: slashList.width
+            height: 26
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 24
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                elide: Text.ElideRight
+                text: modelData.title + (modelData.detail ? " · " + modelData.detail : "")
+                font.family: InkTokens.calligraphyFamily
+                font.pixelSize: 12
+                color: InkTokens.ink700
+            }
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                onTapped: {
+                    if (modelData.kind === "skill")
+                        input.text = modelData.line
+                    else
+                        study.pickSlash(modelData.line)
+                }
+            }
+        }
+    }
+
+    Row {
+        id: attachRow
+        visible: root.hasAttachments
+        anchors.left: parent.left
+        anchors.leftMargin: 24
+        anchors.top: slashList.visible ? slashList.bottom : (modelList.visible ? modelList.bottom : (permissionList.visible ? permissionList.bottom : chips.bottom))
+        anchors.topMargin: 4
+        spacing: 10
+        Repeater {
+            model: (typeof study !== "undefined") ? study.attachments : []
+            Text {
+                required property int index
+                required property var modelData
+                text: (modelData.name ? modelData.name : qsTr("图")) + " ×"
+                font.family: InkTokens.calligraphyFamily
+                font.pixelSize: 12
+                color: InkTokens.ink500
+                HoverHandler {
+                    cursorShape: Qt.PointingHandCursor
+                }
+                TapHandler {
+                    acceptedButtons: Qt.LeftButton
+                    onTapped: study.removeAttachment(index)
+                }
+            }
+        }
+    }
+
     TextArea {
         id: input
         objectName: "composerInput"
         anchors.left: parent.left
         anchors.right: sendSeal.left
-        anchors.top: modelList.visible ? modelList.bottom : modelChip.bottom
+        anchors.top: attachRow.visible ? attachRow.bottom : (slashList.visible ? slashList.bottom : (modelList.visible ? modelList.bottom : (permissionList.visible ? permissionList.bottom : chips.bottom)))
         anchors.bottom: parent.bottom
         anchors.leftMargin: 20
         anchors.rightMargin: 16
@@ -174,6 +358,17 @@ Item {
         Behavior on opacity {
             enabled: MotionBudget.pressMs > 0
             NumberAnimation { duration: MotionBudget.pressMs }
+        }
+    }
+
+    FileDialog {
+        id: picker
+        fileMode: FileDialog.OpenFiles
+        nameFilters: [qsTr("图像 (*.png *.jpg *.jpeg *.webp *.gif)")]
+        onAccepted: {
+            var files = selectedFiles
+            for (var i = 0; i < files.length; ++i)
+                study.attachFromUrl(files[i])
         }
     }
 }

@@ -29,6 +29,15 @@ inline constexpr char kMethodSessionSelectModel[] = "session.selectModel";
 inline constexpr char kMethodSessionCancel[] = "session.cancel";
 inline constexpr char kMethodSettingsDescribe[] = "settings.describe";
 inline constexpr char kMethodSettingsOpenDocument[] = "settings.openDocument";
+inline constexpr char kMethodSettingsUpdate[] = "settings.update";
+inline constexpr char kMethodCredentialsDescribe[] = "credentials.describe";
+inline constexpr char kMethodCredentialsSet[] = "credentials.set";
+inline constexpr char kMethodLlmProviders[] = "llm.providers";
+inline constexpr char kMethodSkillList[] = "skill.list";
+inline constexpr char kMethodSubagentList[] = "subagent.list";
+inline constexpr char kMethodSubagentInterrupt[] = "subagent.interrupt";
+inline constexpr char kMethodAgentPresetList[] = "agentPreset.list";
+inline constexpr char kMethodAgentPresetSelect[] = "agentPreset.select";
 
 /** Route prefix shared with packages/client/connection/src/api-path.ts (`API_PATH`). */
 inline constexpr char kApiPathPrefix[] = "/api";

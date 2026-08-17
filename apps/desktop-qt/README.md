@@ -37,8 +37,9 @@ M1 delivers the native Qt 6 desktop shell: self-managed `dsh --profile web` subp
 
 1. 启动后标题旁墨点表示连接；失败时点「重连」。标题右侧「册」打开设置一览，「动/静」切换减少动态效果。
 2. 左侧点工作区名切换书房；选择会话，或点「新会话」（已有空白会话则复用，不伪造成功）。
-3. 底部书写后点朱砂「发」或 `Ctrl+Enter`，经 `session.prompt` 入队。流式答句走 WebSocket `events.mux` 的 `assistant/chunk`，按帧合并进卷轴，不按 token 整表重排。发送中点「止」调用 `session.cancel`。
-4. 输入区上方点模型名打开 `session.models` 目录，点选后走 `session.selectModel`。工具调用以水墨帖展示；权限点「允/却」，问答在卷轴下沿作答。均经 `POST /api/respond`，无系统对话框。
+3. 底部书写后点朱砂「发送」或 `Ctrl+Enter`，经 `session.prompt` 入队。输入 `/` 弹出斜杠目录（计划、权限、技能）。「附页」选图随条发送。点「计划」切换 `/plan`；点权限名切换本会话预设。流式答句走 WebSocket `events.mux` 的 `assistant/chunk`，按帧合并进卷轴。发送中点「停止」调用 `session.cancel`。差事条显示 `session/jobs`。
+4. 输入区上方点模型名打开 `session.models` 目录，点选后走 `session.selectModel`。工具调用以水墨帖展示；权限点「允许/拒绝」，问答在卷轴下沿作答。均经 `POST /api/respond`，无系统对话框。
+5. 「设置」打开册：概览、常规、模型、权限、技能、子代理、预设。常规/模型字段经 `settings.update` 写入；模型密钥经 `credentials.set`。缺官方密钥时弹出「入门」。底部保留「刷新」「打开配置文书」。
 
 ## M1 验收清单 (Milestone 1 Acceptance)
 

@@ -148,6 +148,7 @@ void Application::onHostStopped() {
     m_connectionHook->setConnected(false);
     m_connectionHook->setConnecting(false);
     m_connectionHook->setHasError(true);
+    m_connectionHook->setHostPort(0);
     m_connectionHook->setStatusText(QStringLiteral("宿主进程已停止"));
   }
 }
@@ -180,17 +181,19 @@ void Application::doHandshake() {
                              m_connectionHook->setConnected(true);
                              m_connectionHook->setHasError(false);
 
-                             QString version = QStringLiteral("dev");
+                             QString version = QStringLiteral("开发版");
                              if (resultOrError.isObject()) {
                                const QJsonObject obj = resultOrError.toObject();
-                               if (obj.contains(QStringLiteral("version")) &&
-                                   !obj.value(QStringLiteral("version")).toString().isEmpty()) {
-                                 version = obj.value(QStringLiteral("version")).toString();
+                               const QString reported = obj.value(QStringLiteral("version")).toString().trimmed();
+                               if (!reported.isEmpty() && reported != QLatin1String("dev")) {
+                                 version = reported;
                                }
                              }
 
+                             m_connectionHook->setHostVersion(version);
+                             m_connectionHook->setHostPort(m_port);
                              m_connectionHook->setStatusText(
-                                 QStringLiteral("已连接 · v%1 · %2").arg(version).arg(m_port));
+                                 QStringLiteral("已连接 · %1 · 端口 %2").arg(version).arg(m_port));
                              connectStreams();
                              loadStudy();
                            } else {

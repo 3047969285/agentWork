@@ -24,7 +24,7 @@ Item {
         spacing: 4
 
         Text {
-            text: qsTr("书房")
+            text: qsTr("工作区")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 12
             color: InkTokens.ink500
@@ -102,10 +102,22 @@ Item {
         }
     }
 
+    Text {
+        id: sessionHeading
+        anchors.top: workspaceList.visible ? workspaceList.bottom : head.bottom
+        anchors.left: parent.left
+        anchors.leftMargin: 18
+        anchors.topMargin: 14
+        text: qsTr("会话")
+        font.family: InkTokens.calligraphyFamily
+        font.pixelSize: 12
+        color: InkTokens.ink500
+    }
+
     ListView {
         id: sessionList
-        anchors.top: workspaceList.visible ? workspaceList.bottom : head.bottom
-        anchors.topMargin: 14
+        anchors.top: sessionHeading.bottom
+        anchors.topMargin: 8
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: newSessionBtn.top
@@ -204,7 +216,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             anchors.topMargin: 28
-            text: qsTr("尚无卷宗")
+            text: qsTr("尚无会话")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 13
             color: InkTokens.ink300

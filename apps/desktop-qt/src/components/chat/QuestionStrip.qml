@@ -81,7 +81,7 @@ Item {
             id: custom
             visible: !root.q.options || root.q.options.length === 0
             width: parent.width
-            placeholderText: qsTr("书答于此…")
+            placeholderText: qsTr("在此作答…")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 13
             color: InkTokens.ink900

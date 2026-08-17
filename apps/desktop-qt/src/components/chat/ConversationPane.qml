@@ -155,10 +155,10 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             text: {
                 if (typeof connection !== "undefined" && !connection.connected)
-                    return qsTr("纸未通 · 候墨")
+                    return qsTr("尚未连接")
                 if (!root.hasSession)
-                    return qsTr("择一卷 · 或新开")
-                return qsTr("纸净 · 待君落墨")
+                    return qsTr("请选择或新建会话")
+                return qsTr("纸净，待你写下第一句")
             }
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 16

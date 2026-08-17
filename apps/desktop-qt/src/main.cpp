@@ -43,6 +43,9 @@ int main(int argc, char *argv[]) {
 #endif
   QQuickStyle::setStyle(QStringLiteral("Basic"));
   QGuiApplication app(argc, argv);
+  app.setApplicationName(QStringLiteral("深卷"));
+  app.setApplicationDisplayName(QStringLiteral("深卷"));
+  app.setOrganizationName(QStringLiteral("深度求索"));
   Application dshApp;
   if (!dshApp.init()) {
     return 1;

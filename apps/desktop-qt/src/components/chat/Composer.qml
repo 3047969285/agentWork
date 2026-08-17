@@ -87,6 +87,17 @@ Item {
                 onTapped: study.selectModel(modelData.provider, modelData.model)
             }
         }
+
+        Text {
+            visible: modelList.count === 0
+            anchors.left: parent.left
+            anchors.leftMargin: 24
+            anchors.verticalCenter: parent.verticalCenter
+            text: qsTr("暂无模型")
+            font.family: InkTokens.calligraphyFamily
+            font.pixelSize: 12
+            color: InkTokens.ink300
+        }
     }
 
     TextArea {
@@ -101,7 +112,7 @@ Item {
         anchors.topMargin: 4
         anchors.bottomMargin: 12
         wrapMode: TextEdit.Wrap
-        placeholderText: qsTr("书于此…")
+        placeholderText: qsTr("在此输入…")
         font.family: InkTokens.calligraphyFamily
         font.pixelSize: 15
         color: InkTokens.ink900
@@ -122,12 +133,12 @@ Item {
         id: sendSeal
         objectName: "composerSend"
         z: 2
-        width: 44
+        width: 52
         height: 44
         radius: 2
         rotation: 8
         anchors.right: parent.right
-        anchors.rightMargin: 22
+        anchors.rightMargin: 18
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 22
         color: {
@@ -140,9 +151,9 @@ Item {
         Text {
             anchors.centerIn: parent
             rotation: -8
-            text: (typeof study !== "undefined" && study.sending) ? qsTr("止") : qsTr("发")
+            text: (typeof study !== "undefined" && study.sending) ? qsTr("停止") : qsTr("发送")
             font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 18
+            font.pixelSize: 14
             color: InkTokens.ink0
         }
 

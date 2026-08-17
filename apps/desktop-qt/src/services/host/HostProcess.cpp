@@ -56,8 +56,8 @@ bool HostProcess::start(QString *errorMessage)
 
     m_process->start();
     if (!m_process->waitForStarted(5000)) {
-        const QString err = QStringLiteral("Failed to start host process '%1': %2")
-            .arg(program, m_process->errorString());
+        const QString err = QStringLiteral("无法启动宿主进程「%1」")
+            .arg(program);
         if (errorMessage) {
             *errorMessage = err;
         }
@@ -73,7 +73,7 @@ bool HostProcess::start(QString *errorMessage)
     while (timer.elapsed() < AppConstants::kHostReadyTimeoutMs) {
         if (!m_running || m_process->state() == QProcess::NotRunning) {
             onReadyReadStandardOutput();
-            const QString err = QStringLiteral("Host process exited prematurely with code %1")
+            const QString err = QStringLiteral("宿主进程过早退出，退出码 %1")
                 .arg(m_process->exitCode());
             if (errorMessage) {
                 *errorMessage = err;
@@ -94,7 +94,7 @@ bool HostProcess::start(QString *errorMessage)
         }
     }
 
-    const QString timeoutErr = QStringLiteral("Timed out waiting for dsh web ready line after %1 ms")
+    const QString timeoutErr = QStringLiteral("等待宿主就绪超时（%1 毫秒）")
         .arg(AppConstants::kHostReadyTimeoutMs);
     if (errorMessage) {
         *errorMessage = timeoutErr;
@@ -290,8 +290,27 @@ void HostProcess::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatu
 
 void HostProcess::onProcessErrorOccurred(QProcess::ProcessError error)
 {
-    Q_UNUSED(error);
-    if (m_process) {
-        emit errorOccurred(m_process->errorString());
+    QString err;
+    switch (error) {
+        case QProcess::FailedToStart:
+            err = QStringLiteral("无法启动宿主进程");
+            break;
+        case QProcess::Crashed:
+            err = QStringLiteral("宿主进程已崩溃");
+            break;
+        case QProcess::Timedout:
+            err = QStringLiteral("宿主进程等待超时");
+            break;
+        case QProcess::WriteError:
+            err = QStringLiteral("无法向宿主进程写入");
+            break;
+        case QProcess::ReadError:
+            err = QStringLiteral("无法读取宿主进程输出");
+            break;
+        case QProcess::UnknownError:
+        default:
+            err = QStringLiteral("宿主进程出错");
+            break;
     }
+    emit errorOccurred(err);
 }

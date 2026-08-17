@@ -94,7 +94,7 @@ Item {
             id: statusInline
             width: Math.min(280, root.width - 220)
             elide: Text.ElideRight
-            text: (typeof connection !== "undefined") ? connection.statusText : qsTr("候墨")
+            text: (typeof connection !== "undefined") ? connection.statusText : qsTr("等待连接…")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 12
             color: (typeof connection !== "undefined" && connection.hasError)
@@ -131,8 +131,27 @@ Item {
         spacing: 16
 
         Text {
+            objectName: "titleRefresh"
+            text: qsTr("刷新")
+            font.family: InkTokens.calligraphyFamily
+            font.pixelSize: 13
+            color: InkTokens.ink500
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                margin: 8
+                acceptedButtons: Qt.LeftButton
+                onTapped: {
+                    if (typeof study !== "undefined")
+                        study.refresh()
+                }
+            }
+        }
+
+        Text {
             objectName: "titleSettings"
-            text: qsTr("册")
+            text: qsTr("设置")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 13
             color: InkTokens.ink500
@@ -151,7 +170,7 @@ Item {
 
         Text {
             id: reduceLabel
-            text: MotionBudget.reduceMotion ? qsTr("静") : qsTr("动")
+            text: MotionBudget.reduceMotion ? qsTr("动效关") : qsTr("动效开")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 13
             color: InkTokens.ink500

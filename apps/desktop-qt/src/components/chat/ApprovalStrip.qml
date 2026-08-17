@@ -22,7 +22,7 @@ Item {
                 return ""
             var a = study.pendingApproval
             var tool = a.toolName ? a.toolName : qsTr("工具")
-            var why = a.reason ? a.reason : qsTr("候君一诺")
+            var why = a.reason ? a.reason : qsTr("等待你确认")
             return tool + " · " + why
         }
         font.family: InkTokens.calligraphyFamily
@@ -39,7 +39,7 @@ Item {
         spacing: 16
 
         Text {
-            text: qsTr("允")
+            text: qsTr("允许")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 16
             color: InkTokens.cinnabar
@@ -53,7 +53,7 @@ Item {
             }
         }
         Text {
-            text: qsTr("却")
+            text: qsTr("拒绝")
             font.family: InkTokens.calligraphyFamily
             font.pixelSize: 16
             color: InkTokens.ink500

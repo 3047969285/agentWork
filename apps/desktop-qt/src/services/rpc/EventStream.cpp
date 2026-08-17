@@ -104,7 +104,7 @@ class EventStream::Downlink : public QObject {
       m_header = m_buffer.left(split);
       m_buffer.remove(0, split + 4);
       if (!m_header.startsWith("HTTP/1.1 101") && !m_header.startsWith("HTTP/1.0 101")) {
-        emit m_owner->errorOccurred(QStringLiteral("WebSocket 握手失败"));
+        emit m_owner->errorOccurred(QStringLiteral("事件流握手失败"));
         close();
         return;
       }
@@ -120,10 +120,32 @@ class EventStream::Downlink : public QObject {
     m_owner->emitClosedIfNeeded();
   }
 
-  void onError(QAbstractSocket::SocketError) {
-    if (m_socket->state() != QAbstractSocket::UnconnectedState) {
-      emit m_owner->errorOccurred(m_socket->errorString());
+  void onError(QAbstractSocket::SocketError error) {
+    if (m_socket->state() == QAbstractSocket::UnconnectedState) {
+      return;
     }
+    QString message;
+    switch (error) {
+      case QAbstractSocket::ConnectionRefusedError:
+        message = QStringLiteral("事件流连接被拒绝");
+        break;
+      case QAbstractSocket::RemoteHostClosedError:
+        message = QStringLiteral("事件流被宿主关闭");
+        break;
+      case QAbstractSocket::HostNotFoundError:
+        message = QStringLiteral("找不到事件流宿主");
+        break;
+      case QAbstractSocket::SocketTimeoutError:
+        message = QStringLiteral("事件流连接超时");
+        break;
+      case QAbstractSocket::NetworkError:
+        message = QStringLiteral("事件流网络错误");
+        break;
+      default:
+        message = QStringLiteral("事件流出错");
+        break;
+    }
+    emit m_owner->errorOccurred(message);
   }
 
   bool takeFrame() {
@@ -150,7 +172,7 @@ class EventStream::Downlink : public QObject {
       header = 10;
     }
     if (len > static_cast<quint64>(kMaxFrameBytes)) {
-      emit m_owner->errorOccurred(QStringLiteral("WebSocket 帧过大"));
+      emit m_owner->errorOccurred(QStringLiteral("事件流数据过大"));
       close();
       return false;
     }

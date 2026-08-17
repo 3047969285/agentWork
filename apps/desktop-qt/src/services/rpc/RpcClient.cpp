@@ -13,6 +13,35 @@ namespace {
 
 QString mintRpcId() { return QUuid::createUuid().toString(QUuid::WithoutBraces); }
 
+QString networkFailure(QNetworkReply *reply) {
+  switch (reply->error()) {
+    case QNetworkReply::ConnectionRefusedError:
+      return QStringLiteral("连接被拒绝");
+    case QNetworkReply::RemoteHostClosedError:
+      return QStringLiteral("宿主关闭了连接");
+    case QNetworkReply::HostNotFoundError:
+      return QStringLiteral("找不到宿主");
+    case QNetworkReply::TimeoutError:
+      return QStringLiteral("请求超时");
+    case QNetworkReply::OperationCanceledError:
+      return QStringLiteral("请求已取消");
+    case QNetworkReply::SslHandshakeFailedError:
+      return QStringLiteral("安全握手失败");
+    case QNetworkReply::TemporaryNetworkFailureError:
+      return QStringLiteral("网络暂时中断");
+    case QNetworkReply::NetworkSessionFailedError:
+      return QStringLiteral("网络会话失败");
+    case QNetworkReply::BackgroundRequestNotAllowedError:
+      return QStringLiteral("不允许后台请求");
+    case QNetworkReply::TooManyRedirectsError:
+      return QStringLiteral("重定向过多");
+    case QNetworkReply::InsecureRedirectError:
+      return QStringLiteral("不安全的重定向");
+    default:
+      return QStringLiteral("网络错误");
+  }
+}
+
 }  // namespace
 
 RpcClient::RpcClient(QObject *parent) : QObject(parent), m_network(new QNetworkAccessManager(this)) {}
@@ -50,7 +79,7 @@ bool RpcClient::parseServerResponse(const QJsonObject &response, const QString &
   const QString type = response.value(QString::fromLatin1(dsh::rpc::kFieldType)).toString();
   if (type != QLatin1String(dsh::rpc::kServerResponseType)) {
     if (errorMessage != nullptr) {
-      *errorMessage = QStringLiteral("unexpected response type: %1").arg(type);
+      *errorMessage = QStringLiteral("响应类型异常：%1").arg(type);
     }
     return false;
   }
@@ -58,7 +87,7 @@ bool RpcClient::parseServerResponse(const QJsonObject &response, const QString &
   const QString rpcId = response.value(QString::fromLatin1(dsh::rpc::kFieldRpcId)).toString();
   if (rpcId != expectedRpcId) {
     if (errorMessage != nullptr) {
-      *errorMessage = QStringLiteral("rpcId mismatch: expected %1, got %2").arg(expectedRpcId, rpcId);
+      *errorMessage = QStringLiteral("请求编号不一致：期望 %1，实际 %2").arg(expectedRpcId, rpcId);
     }
     return false;
   }
@@ -66,7 +95,7 @@ bool RpcClient::parseServerResponse(const QJsonObject &response, const QString &
   if (!response.contains(QString::fromLatin1(dsh::rpc::kFieldResult)) ||
       !response.value(QString::fromLatin1(dsh::rpc::kFieldResult)).isObject()) {
     if (errorMessage != nullptr) {
-      *errorMessage = QStringLiteral("missing result object");
+      *errorMessage = QStringLiteral("响应缺少结果");
     }
     return false;
   }
@@ -74,7 +103,7 @@ bool RpcClient::parseServerResponse(const QJsonObject &response, const QString &
   const QJsonObject result = response.value(QString::fromLatin1(dsh::rpc::kFieldResult)).toObject();
   if (!result.contains(QString::fromLatin1(dsh::rpc::kFieldOk))) {
     if (errorMessage != nullptr) {
-      *errorMessage = QStringLiteral("missing result.ok");
+      *errorMessage = QStringLiteral("响应缺少结果状态");
     }
     return false;
   }
@@ -101,7 +130,7 @@ QUrl RpcClient::unaryUrlForMethod(const QString &method) const {
 void RpcClient::callUnary(const QString &method, const QJsonValue &payload,
                           const std::function<void(bool ok, QJsonValue resultOrError)> &done) {
   if (!m_baseUrl.isValid()) {
-    done(false, QStringLiteral("RpcClient base URL is not set"));
+    done(false, QStringLiteral("尚未设置宿主地址"));
     return;
   }
 
@@ -119,20 +148,20 @@ void RpcClient::callUnary(const QString &method, const QJsonValue &payload,
     reply->deleteLater();
 
     if (reply->error() != QNetworkReply::NoError) {
-      done(false, reply->errorString());
+      done(false, networkFailure(reply));
       return;
     }
 
     const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     if (statusCode < 200 || statusCode >= 300) {
-      done(false, QStringLiteral("HTTP %1").arg(statusCode));
+      done(false, QStringLiteral("服务返回状态 %1").arg(statusCode));
       return;
     }
 
     QJsonParseError parseError;
     const QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-      done(false, QStringLiteral("invalid JSON response: %1").arg(parseError.errorString()));
+      done(false, QStringLiteral("响应不是有效 JSON"));
       return;
     }
 
@@ -151,11 +180,11 @@ void RpcClient::callUnary(const QString &method, const QJsonValue &payload,
 void RpcClient::callRespond(const QString &rpcId, const QJsonValue &value,
                             const std::function<void(bool accepted, QString reason)> &done) {
   if (!m_baseUrl.isValid()) {
-    done(false, QStringLiteral("RpcClient base URL is not set"));
+    done(false, QStringLiteral("尚未设置宿主地址"));
     return;
   }
   if (rpcId.isEmpty()) {
-    done(false, QStringLiteral("missing rpcId"));
+    done(false, QStringLiteral("缺少请求编号"));
     return;
   }
 
@@ -171,18 +200,18 @@ void RpcClient::callRespond(const QString &rpcId, const QJsonValue &value,
   connect(reply, &QNetworkReply::finished, this, [reply, done]() {
     reply->deleteLater();
     if (reply->error() != QNetworkReply::NoError) {
-      done(false, reply->errorString());
+      done(false, networkFailure(reply));
       return;
     }
     const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     if (statusCode < 200 || statusCode >= 300) {
-      done(false, QStringLiteral("HTTP %1").arg(statusCode));
+      done(false, QStringLiteral("服务返回状态 %1").arg(statusCode));
       return;
     }
     QJsonParseError parseError;
     const QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-      done(false, QStringLiteral("invalid JSON response: %1").arg(parseError.errorString()));
+      done(false, QStringLiteral("响应不是有效 JSON"));
       return;
     }
     const QJsonObject receipt = document.object();

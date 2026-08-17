@@ -9,7 +9,7 @@
 WindowController::WindowController(QObject *parent)
     : QObject(parent), m_engine(new QQmlApplicationEngine(this)) {
   connect(m_engine, &QQmlApplicationEngine::objectCreationFailed, this,
-          [](const QUrl &url) { qWarning() << "Failed to create QML object:" << url; });
+          [](const QUrl &url) { qWarning() << "无法创建界面对象:" << url; });
 }
 
 WindowController::~WindowController() = default;

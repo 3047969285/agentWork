@@ -50,7 +50,7 @@ Item {
                 color: InkTokens.ink900
             }
             Text {
-                text: status === "pending" ? qsTr("未竟") : (status === "error" ? qsTr("折") : qsTr("成"))
+                text: status === "pending" ? qsTr("进行中") : (status === "error" ? qsTr("失败") : qsTr("完成"))
                 font.family: InkTokens.calligraphyFamily
                 font.pixelSize: 11
                 color: status === "error" ? InkTokens.cinnabar : InkTokens.ink500

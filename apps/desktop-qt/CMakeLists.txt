@@ -10,7 +10,10 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 Network Test)
 
 qt_add_executable(dsh-desktop
   src/main.cpp
+  src/services/host/HostProcess.cpp
 )
+
+target_include_directories(dsh-desktop PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set(_dsh_qml_singletons
   src/styles/tokens/InkTokens.qml
@@ -37,5 +40,14 @@ target_link_libraries(dsh-desktop PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Ne
 
 # --- rpc sources added by Task 5 agent ---
 include(cmake/RpcSources.cmake)
+
+# --- host test added by Task 4 ---
+qt_add_executable(tst_host_args
+  tests/tst_host_args.cpp
+  src/services/host/HostProcess.cpp
+)
+target_include_directories(tst_host_args PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_link_libraries(tst_host_args PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+add_test(NAME tst_host_args COMMAND tst_host_args)
 
 enable_testing()

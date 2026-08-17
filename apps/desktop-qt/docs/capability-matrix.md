@@ -3,7 +3,7 @@
 | id | web-anchor | qt-target | rpc-methods | milestone | status | verify |
 |---|---|---|---|---|---|---|
 | desktop.shell.window | apps/web | pages/shell/MainShell.qml | — | M1 | wip | 窗口可见 |
-| desktop.host.spawn | — | services/host/HostProcess | — | M1 | todo | 子进程存在且回环监听 |
+| desktop.host.spawn | — | services/host/HostProcess | — | M1 | done | 子进程存在且回环监听（tst_host_args + live 启动均通过） |
 | desktop.rpc.host_describe | connection | services/rpc/RpcClient | host.describe | M1 | wip | RpcClient 单测通过；UI 接线待 Task 6 |
 | desktop.ink.tokens | ui-theme | styles/tokens/InkTokens.qml | — | M1 | wip | 浅/深切换 |
 | desktop.ink.motion_reduce | — | styles/motion/MotionBudget.qml | — | M1 | wip | 开关关闭墨晕 |

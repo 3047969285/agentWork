@@ -7,10 +7,10 @@
 | desktop.rpc.host_describe | connection | services/rpc/RpcClient | host.describe | M1 | done | RpcClient 单测通过；HostProcess 联动解析端口并完成握手展示 |
 | desktop.ink.tokens | ui-theme | styles/tokens/InkTokens.qml | — | M1 | done | 水墨色系 Token 体系完整，宣纸质感底色与主辅文字色适配 |
 | desktop.ink.motion_reduce | — | styles/motion/MotionBudget.qml | — | M1 | done | 开关切换 reduceMotion 即时禁用 InkBloom 动效 |
-| ui-layout | ui-layout | pages/* | — | M2 | todo | — |
-| ui-sidebar | ui-sidebar | pages/session | — | M2 | todo | — |
-| ui-workspace | ui-workspace | pages/workspace | — | M2 | todo | — |
-| ui-conversation | ui-conversation | pages/session | — | M2 | todo | — |
+| ui-layout | ui-layout | pages/shell/MainShell.qml | — | M2 | wip | 书房三栏：侧栏、卷轴、输入 |
+| ui-sidebar | ui-sidebar | components/chrome/Sidebar.qml | session.list, session.create | M2 | wip | 会话列表与新会话 |
+| ui-workspace | ui-workspace | components/chrome/Sidebar.qml | workspace.list | M2 | wip | 展示当前工作区名；尚未切换工作区 |
+| ui-conversation | ui-conversation | components/chat/ConversationPane.qml | session.history, session.prompt | M2 | wip | 空卷留白；历史文本；prompt 后轮询 |
 | ui-model-selection | ui-model-selection | components/chat | — | M2 | todo | — |
 | ui-tool | ui-tool | — | — | M3 | todo | — |
 | ui-permission-presets | ui-permission-presets | — | — | M3 | todo | — |

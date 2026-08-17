@@ -13,6 +13,8 @@ qt_add_executable(dsh-desktop
   src/app/Application.cpp
   src/app/WindowController.cpp
   src/hooks/ConnectionHook.cpp
+  src/hooks/StudyHook.cpp
+  src/utils/StudyJson.cpp
   src/services/host/HostProcess.cpp
 )
 
@@ -36,10 +38,27 @@ qt_add_qml_module(dsh-desktop
     src/components/ink/PaperBackground.qml
     src/components/ink/InkBloom.qml
     src/components/chrome/TitleBar.qml
+    src/components/chrome/Sidebar.qml
+    src/components/chat/ConversationPane.qml
+    src/components/chat/Composer.qml
     src/pages/shell/MainShell.qml
 )
 
 target_link_libraries(dsh-desktop PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network)
+
+if (WIN32)
+  set(_dsh_windeployqt "${Qt6_DIR}/../../../bin/windeployqt.exe")
+  cmake_path(NORMAL_PATH _dsh_windeployqt)
+  add_custom_command(TARGET dsh-desktop POST_BUILD
+    COMMAND "${_dsh_windeployqt}"
+            --$<IF:$<CONFIG:Debug>,debug,release>
+            --no-compiler-runtime
+            --no-translations
+            --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/src"
+            "$<TARGET_FILE:dsh-desktop>"
+    COMMENT "Deploy Qt runtime beside dsh-desktop (no vcredist dialog)"
+  )
+endif()
 
 # --- rpc sources added by Task 5 agent ---
 include(cmake/RpcSources.cmake)
@@ -52,5 +71,13 @@ qt_add_executable(tst_host_args
 target_include_directories(tst_host_args PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(tst_host_args PRIVATE Qt6::Core Qt6::Network Qt6::Test)
 add_test(NAME tst_host_args COMMAND tst_host_args)
+
+qt_add_executable(tst_study_json
+  tests/tst_study_json.cpp
+  src/utils/StudyJson.cpp
+)
+target_include_directories(tst_study_json PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_link_libraries(tst_study_json PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME tst_study_json COMMAND tst_study_json)
 
 enable_testing()

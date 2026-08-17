@@ -1,9 +1,10 @@
 #pragma once
 
-#include <QObject>
 #include <QQmlApplicationEngine>
+#include <QObject>
 
 class ConnectionHook;
+class StudyHook;
 
 class WindowController : public QObject {
   Q_OBJECT
@@ -12,7 +13,7 @@ class WindowController : public QObject {
   explicit WindowController(QObject *parent = nullptr);
   ~WindowController() override;
 
-  bool init(ConnectionHook *connectionHook);
+  bool init(ConnectionHook *connectionHook, StudyHook *studyHook);
   QQmlApplicationEngine *engine() const;
 
  private:

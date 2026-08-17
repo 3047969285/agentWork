@@ -1,8 +1,8 @@
 import QtQuick
-import QtQuick.Controls
 import dsh
 import "qrc:/dsh/src/components/ink" as InkComp
 import "qrc:/dsh/src/components/chrome" as ChromeComp
+import "qrc:/dsh/src/components/chat" as ChatComp
 
 Item {
     id: root
@@ -18,66 +18,50 @@ Item {
         anchors.right: parent.right
     }
 
-    Column {
-        anchors.centerIn: parent
-        spacing: 16
+    ChromeComp.Sidebar {
+        id: sidebar
+        anchors.top: titleBar.bottom
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+    }
 
-        Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 8
-
-            Rectangle {
-                width: 10
-                height: 10
-                radius: 5
-                anchors.verticalCenter: parent.verticalCenter
-                color: (typeof connection !== "undefined" && connection.connected)
-                       ? InkTokens.ink900
-                       : ((typeof connection !== "undefined" && connection.hasError)
-                          ? InkTokens.cinnabar
-                          : InkTokens.ink300)
-            }
-
-            Text {
-                id: statusLabel
-                text: (typeof connection !== "undefined") ? connection.statusText : qsTr("等待连接…")
-                font.family: Qt.platform.os === "windows" ? "SimSun" : "serif"
-                font.pixelSize: 18
-                color: (typeof connection !== "undefined" && connection.hasError) ? InkTokens.cinnabar : InkTokens.ink500
-                anchors.verticalCenter: parent.verticalCenter
-            }
+    Text {
+        id: inlineStatus
+        visible: typeof connection !== "undefined"
+                 && (!connection.connected || connection.hasError
+                     || (typeof study !== "undefined" && study.noticeText.length > 0))
+        anchors.top: titleBar.bottom
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.leftMargin: 24
+        anchors.rightMargin: 24
+        height: visible ? 22 : 0
+        verticalAlignment: Text.AlignVCenter
+        font.family: InkTokens.calligraphyFamily
+        font.pixelSize: 12
+        color: InkTokens.cinnabar
+        elide: Text.ElideRight
+        text: {
+            if (typeof study !== "undefined" && study.noticeText.length > 0)
+                return study.noticeText
+            if (typeof connection !== "undefined")
+                return connection.statusText
+            return ""
         }
+    }
 
-        Button {
-            id: retryBtn
-            visible: typeof connection !== "undefined" && connection.hasError && !connection.connected
-            text: qsTr("重新连接")
-            anchors.horizontalCenter: parent.horizontalCenter
-            font.family: Qt.platform.os === "windows" ? "SimSun" : "serif"
-            font.pixelSize: 14
+    ChatComp.ConversationPane {
+        id: scroll
+        anchors.top: inlineStatus.visible ? inlineStatus.bottom : titleBar.bottom
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.bottom: composer.top
+    }
 
-            contentItem: Text {
-                text: retryBtn.text
-                font: retryBtn.font
-                color: InkTokens.cinnabar
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-
-            background: Rectangle {
-                implicitWidth: 100
-                implicitHeight: 32
-                color: retryBtn.down ? InkTokens.ink100 : InkTokens.ink0
-                border.color: InkTokens.cinnabar
-                border.width: 1
-                radius: 4
-            }
-
-            onClicked: {
-                if (typeof connection !== "undefined") {
-                    connection.retry()
-                }
-            }
-        }
+    ChatComp.Composer {
+        id: composer
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
     }
 }

@@ -1,5 +1,6 @@
 #include "app/WindowController.h"
 #include "hooks/ConnectionHook.h"
+#include "hooks/StudyHook.h"
 
 #include <QQmlContext>
 #include <QDebug>
@@ -12,9 +13,12 @@ WindowController::WindowController(QObject *parent)
 
 WindowController::~WindowController() = default;
 
-bool WindowController::init(ConnectionHook *connectionHook) {
+bool WindowController::init(ConnectionHook *connectionHook, StudyHook *studyHook) {
   if (connectionHook != nullptr) {
     m_engine->rootContext()->setContextProperty(QStringLiteral("connection"), connectionHook);
+  }
+  if (studyHook != nullptr) {
+    m_engine->rootContext()->setContextProperty(QStringLiteral("study"), studyHook);
   }
   m_engine->load(QUrl(QStringLiteral("qrc:/dsh/src/qml/Main.qml")));
   return !m_engine->rootObjects().isEmpty();

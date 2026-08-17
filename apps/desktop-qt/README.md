@@ -31,13 +31,20 @@ The executable is emitted as `apps/desktop-qt/build/Release/dsh-desktop.exe` (Vi
 apps/desktop-qt/build/Release/dsh-desktop.exe
 ```
 
-M1 delivers the native Qt 6 desktop shell: self-managed `dsh --profile web` subprocess lifecycle on loopback `127.0.0.1`, unary HTTP RPC client handshake via `host.describe`, and an ink-themed main window (`MainShell`) at 1280×800 with reduce-motion control and live connection status.
+M1 delivers the native Qt 6 desktop shell: self-managed `dsh --profile web` subprocess lifecycle on loopback `127.0.0.1`, unary HTTP RPC via `host.describe`, `workspace.list`, `session.list`, `session.create`, `session.history`, and `session.prompt`. The main window is an ink-wash 书房: title seal for connection, sidebar sessions, empty-scroll calligraphy, and a cinnabar send seal. Reduce-motion lives in the title bar (`静`/`动`).
+
+## 书房操作
+
+1. 启动后标题旁墨点表示连接；失败时点「重连」。
+2. 左侧选择会话，或点「新会话」（已有空白会话则复用，不伪造成功）。
+3. 底部书写后点朱砂「发」或 `Ctrl+Enter`，经 `session.prompt` 入队；卷轴用 `session.history` 轮询补答，不是 WebSocket 流。
+4. 「减少动态效果」在标题栏右侧「动/静」二字，悬停可见完整文案。
 
 ## M1 验收清单 (Milestone 1 Acceptance)
 
 1. **Release 构建可正常启动：** MSVC 2022 x64 Release 配置下构建的 `dsh-desktop.exe` 能顺利启动并加载 QML 界面。
 2. **自管 dsh 宿主回环监听：** 启动后自动拉起 `dsh` 子进程，绑定 `127.0.0.1`，禁用 `0.0.0.0`，并动态解析就绪端口。
-3. **完成 host.describe 握手并展示：** `RpcClient` 通过 HTTP POST `/api/host.describe` 发送 `client-request` 信封并解析 `server-response`，UI 呈现「已连接 · DeepSeek Harness v... (端口 ...)」。
-4. **水墨沉浸与动效降级：** 浅色宣纸背景（`InkTokens.windowBg`）对比度清晰可读；勾选「减少动态效果」开关后即时关闭墨晕（InkBloom）动效。
+3. **完成 host.describe 握手并展示：** `RpcClient` 通过 HTTP POST `/api/host.describe` 发送 `client-request` 信封并解析 `server-response`；连接态收成标题栏墨印，悬停可见版本与端口，主区不再堆状态段落。
+4. **水墨沉浸与动效降级：** 浅色宣纸背景（`InkTokens.windowBg`）对比度清晰可读；标题栏「动/静」切换 `MotionBudget.reduceMotion` 后即时关闭墨晕（InkBloom）。
 5. **UI 退出安全回收子进程：** 关闭桌面应用主窗口（触发 `aboutToQuit`）后，自管的 `dsh` / `node` 子进程被干净停止，无后台残留。
 6. **Web 产品入口完整保留：** 未修改、未破坏且未删除 `apps/web` 与 `packages/client/**`，Web 与桌面版并行不悖。

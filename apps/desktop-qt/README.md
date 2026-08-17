@@ -31,4 +31,4 @@ The executable is emitted as `apps/desktop-qt/build/Release/dsh-desktop.exe` (Vi
 apps/desktop-qt/build/Release/dsh-desktop.exe
 ```
 
-M1 Task 1 shows an empty paper-colored window (1280×800). Host process and RPC wiring arrive in later tasks.
+M1 Task 3 shows the ink paper shell (`MainShell`) at 1280×800 with title bar, connection placeholder, and a reduce-motion toggle. Host process and RPC wiring arrive in later tasks.

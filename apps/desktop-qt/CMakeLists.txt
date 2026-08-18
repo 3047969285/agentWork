@@ -62,15 +62,29 @@ set_target_properties(dsh-desktop PROPERTIES WIN32_EXECUTABLE TRUE)
 if (WIN32)
   set(_dsh_windeployqt "${Qt6_DIR}/../../../bin/windeployqt.exe")
   cmake_path(NORMAL_PATH _dsh_windeployqt)
-  add_custom_command(TARGET dsh-desktop POST_BUILD
-    COMMAND "${_dsh_windeployqt}"
-            --$<IF:$<CONFIG:Debug>,debug,release>
-            --no-compiler-runtime
-            --no-translations
-            --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/src"
-            "$<TARGET_FILE:dsh-desktop>"
-    COMMENT "Deploy Qt runtime beside dsh-desktop (no vcredist dialog)"
-  )
+
+  # Product exe deploys QML runtime only. Test targets pass TEST so Qt6Test.dll
+  # lands beside tst_*.exe; dsh-desktop must never link or deploy Qt Test.
+  function(dsh_windeploy_qt target)
+    cmake_parse_arguments(ARG "TEST" "QMLDIR" "" ${ARGN})
+    set(_wd_args
+      --$<IF:$<CONFIG:Debug>,debug,release>
+      --no-compiler-runtime
+      --no-translations
+    )
+    if(ARG_TEST)
+      list(APPEND _wd_args -test --no-quick-import)
+    endif()
+    if(ARG_QMLDIR)
+      list(APPEND _wd_args --qmldir "${ARG_QMLDIR}")
+    endif()
+    add_custom_command(TARGET ${target} POST_BUILD
+      COMMAND "${_dsh_windeployqt}" ${_wd_args} "$<TARGET_FILE:${target}>"
+      COMMENT "Deploy Qt runtime beside ${target}"
+    )
+  endfunction()
+
+  dsh_windeploy_qt(dsh-desktop QMLDIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 endif()
 
 # --- rpc sources added by Task 5 agent ---
@@ -94,5 +108,11 @@ qt_add_executable(tst_study_json
 target_include_directories(tst_study_json PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(tst_study_json PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME tst_study_json COMMAND tst_study_json)
+
+if (WIN32)
+  dsh_windeploy_qt(tst_rpc_envelope TEST)
+  dsh_windeploy_qt(tst_host_args TEST)
+  dsh_windeploy_qt(tst_study_json TEST)
+endif()
 
 enable_testing()

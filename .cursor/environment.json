@@ -1,0 +1,17 @@
+{
+  "name": "agentWork",
+  "install": "./mvnw -B -e -DskipTests clean package",
+  "terminals": [
+    {
+      "name": "app",
+      "command": "./mvnw -B spring-boot:run",
+      "description": "Runs the agentWork Spring Boot service on http://localhost:8080 (endpoints: /api/hello, /actuator/health)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 8080
+    }
+  ]
+}

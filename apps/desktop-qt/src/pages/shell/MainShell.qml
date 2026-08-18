@@ -29,13 +29,13 @@ Item {
         z: 1
         enabled: visible
         visible: typeof connection !== "undefined"
-                 && (!connection.connected || connection.hasError
+                 && (connection.hasError
                      || (typeof study !== "undefined" && study.noticeText.length > 0))
         anchors.top: titleBar.bottom
         anchors.left: sidebar.right
         anchors.right: parent.right
-        anchors.leftMargin: 24
-        anchors.rightMargin: 24
+        anchors.leftMargin: InkTokens.rhythm * 3
+        anchors.rightMargin: InkTokens.rhythm * 3
         height: visible ? 22 : 0
         verticalAlignment: Text.AlignVCenter
         font.family: InkTokens.calligraphyFamily

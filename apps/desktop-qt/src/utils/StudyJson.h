@@ -59,6 +59,7 @@ QVariantMap toolRow(const QJsonObject &event, const QJsonValue &view);
 QJsonObject promptPayload(const QString &sessionId, const QString &text);
 QJsonObject promptPayload(const QString &sessionId, const QString &text, const QVariantList &images);
 QJsonObject createPayload(const QString &workspaceId);
+QJsonObject workspaceCreatePayload(const QString &path);
 QJsonObject modelsPayload(const QString &sessionId);
 QJsonObject selectModelPayload(const QString &sessionId, const QString &provider, const QString &model);
 QJsonObject cancelPayload(const QString &sessionId);

@@ -65,6 +65,8 @@ Application::Application(QObject *parent)
   connect(m_studyHook, &StudyHook::sendRequested, this, &Application::onSendRequested);
   connect(m_studyHook, &StudyHook::refreshRequested, this, &Application::onRefreshRequested);
   connect(m_studyHook, &StudyHook::workspaceRequested, this, &Application::onWorkspaceRequested);
+  connect(m_studyHook, &StudyHook::workspaceCreateRequested, this, &Application::onWorkspaceCreateRequested);
+  connect(m_studyHook, &StudyHook::workspacePickRequested, this, &Application::onWorkspacePickRequested);
   connect(m_studyHook, &StudyHook::modelRequested, this, &Application::onModelRequested);
   connect(m_studyHook, &StudyHook::cancelRequested, this, &Application::onCancelRequested);
   connect(m_studyHook, &StudyHook::approvalAnswerRequested, this, &Application::onApprovalAnswerRequested);
@@ -206,8 +208,7 @@ void Application::doHandshake() {
 
                              m_connectionHook->setHostVersion(version);
                              m_connectionHook->setHostPort(m_port);
-                             m_connectionHook->setStatusText(
-                                 QStringLiteral("已连接 · %1 · 端口 %2").arg(version).arg(m_port));
+                             m_connectionHook->setStatusText(QStringLiteral("已连接"));
                              qInfo().noquote() << QStringLiteral("host.describe") << version << m_port
                                                << m_rpcClient->baseUrl().toString();
                              connectStreams();
@@ -372,6 +373,53 @@ void Application::onWorkspaceRequested(const QString &workspaceId) {
   }
   m_studyHook->setWorkspaceId(workspaceId);
   applyStudyLists(m_workspaceList, m_sessionList);
+}
+
+void Application::onWorkspaceCreateRequested(const QString &path) {
+  if (!m_connectionHook->connected()) {
+    m_studyHook->setNoticeText(QStringLiteral("尚未连接"));
+    return;
+  }
+  m_studyHook->setBusy(true);
+  m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodWorkspaceCreate),
+                         dsh::study::workspaceCreatePayload(path),
+                         [this, path](bool ok, QJsonValue resultOrError) {
+                           m_studyHook->setBusy(false);
+                           if (!ok) {
+                             m_studyHook->setNoticeText(dsh::study::rpcErrorMessage(resultOrError));
+                             return;
+                           }
+                           const QJsonObject value = resultOrError.toObject();
+                           const QJsonObject workspace = value.value(QStringLiteral("workspace")).toObject();
+                           const QString workspaceId = workspace.value(QStringLiteral("workspaceId")).toString();
+                           qInfo().noquote() << QStringLiteral("workspace.create") << path << workspaceId;
+                           m_studyHook->setNoticeText({});
+                           if (!workspaceId.isEmpty()) {
+                             m_studyHook->setWorkspaceId(workspaceId);
+                           }
+                           loadStudy();
+                         });
+}
+
+void Application::onWorkspacePickRequested() {
+  if (!m_connectionHook->connected()) {
+    m_studyHook->setNoticeText(QStringLiteral("尚未连接"));
+    return;
+  }
+  m_rpcClient->callUnary(QString::fromLatin1(dsh::rpc::kMethodHostPickDirectory), QJsonObject{},
+                         [this](bool ok, QJsonValue resultOrError) {
+                           if (!ok) {
+                             emit m_studyHook->workspacePickFallbackRequested();
+                             return;
+                           }
+                           if (resultOrError.isNull()) {
+                             return;
+                           }
+                           const QString path = resultOrError.toString().trimmed();
+                           if (!path.isEmpty()) {
+                             onWorkspaceCreateRequested(path);
+                           }
+                         });
 }
 
 void Application::onCreateRequested() {

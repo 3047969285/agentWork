@@ -19,7 +19,9 @@ inline constexpr char kFieldValue[] = "value";
 inline constexpr char kFieldError[] = "error";
 
 inline constexpr char kMethodHostDescribe[] = "host.describe";
+inline constexpr char kMethodHostPickDirectory[] = "host.pickDirectory";
 inline constexpr char kMethodWorkspaceList[] = "workspace.list";
+inline constexpr char kMethodWorkspaceCreate[] = "workspace.create";
 inline constexpr char kMethodSessionList[] = "session.list";
 inline constexpr char kMethodSessionCreate[] = "session.create";
 inline constexpr char kMethodSessionHistory[] = "session.history";

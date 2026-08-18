@@ -1,6 +1,7 @@
 #include <QtTest>
 
 #include "models/TranscriptModel.h"
+#include "utils/MarkdownFormat.h"
 #include "utils/StudyJson.h"
 
 class TstStudyJson : public QObject {
@@ -267,6 +268,14 @@ class TstStudyJson : public QObject {
     QCOMPARE(rows.at(0).toMap().value(QStringLiteral("statusLabel")).toString(), QStringLiteral("进行中"));
     QCOMPARE(dsh::study::imageMediaType(QStringLiteral("C:/a.PNG")), QStringLiteral("image/png"));
     QVERIFY(dsh::study::imageMediaType(QStringLiteral("C:/a.txt")).isEmpty());
+  }
+
+  void markdownToHtml_rendersBoldCodeAndLists() {
+    const QString html = dsh::study::markdownToHtml(QStringLiteral("**bold** and `code`\n- one\n- two"));
+    QVERIFY(html.contains(QStringLiteral("<b>bold</b>")));
+    QVERIFY(html.contains(QStringLiteral("<code>code</code>")));
+    QVERIFY(html.contains(QStringLiteral("<ul")));
+    QVERIFY(html.contains(QStringLiteral("<li>one</li>")));
   }
 };
 

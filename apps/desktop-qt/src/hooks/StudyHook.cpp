@@ -2,6 +2,7 @@
 
 #include "models/SessionListModel.h"
 #include "models/TranscriptModel.h"
+#include "utils/MarkdownFormat.h"
 
 StudyHook::StudyHook(QObject *parent)
     : QObject(parent),
@@ -52,6 +53,7 @@ QVariantList StudyHook::slashItems() const { return m_slashItems; }
 bool StudyHook::onboardingOpen() const { return m_onboardingOpen; }
 QString StudyHook::onboardingKeyRef() const { return m_onboardingKeyRef; }
 bool StudyHook::streamOpen() const { return m_streamOpen; }
+bool StudyHook::workspacePickerOpen() const { return m_workspacePickerOpen; }
 
 void StudyHook::setWorkspaceTitle(const QString &title) {
   if (m_workspaceTitle != title) {
@@ -298,6 +300,13 @@ void StudyHook::setStreamOpen(bool open) {
   }
 }
 
+void StudyHook::setWorkspacePickerOpen(bool open) {
+  if (m_workspacePickerOpen != open) {
+    m_workspacePickerOpen = open;
+    emit workspacePickerOpenChanged();
+  }
+}
+
 void StudyHook::selectSession(const QString &sessionId) {
   if (sessionId.trimmed().isEmpty()) {
     return;
@@ -315,7 +324,33 @@ void StudyHook::selectWorkspace(const QString &workspaceId) {
   if (workspaceId.trimmed().isEmpty()) {
     return;
   }
+  setWorkspacePickerOpen(false);
   emit workspaceRequested(workspaceId);
+}
+
+void StudyHook::toggleWorkspacePicker() {
+  setWorkspacePickerOpen(!m_workspacePickerOpen);
+}
+
+void StudyHook::closeWorkspacePicker() {
+  setWorkspacePickerOpen(false);
+}
+
+void StudyHook::createWorkspaceFromPath(const QString &path) {
+  const QString trimmed = path.trimmed();
+  if (trimmed.isEmpty()) {
+    return;
+  }
+  setWorkspacePickerOpen(false);
+  emit workspaceCreateRequested(trimmed);
+}
+
+void StudyHook::pickAndCreateWorkspace() {
+  emit workspacePickRequested();
+}
+
+QString StudyHook::formatAssistantText(const QString &text) {
+  return dsh::study::markdownToHtml(text);
 }
 
 void StudyHook::selectModel(const QString &provider, const QString &model) {

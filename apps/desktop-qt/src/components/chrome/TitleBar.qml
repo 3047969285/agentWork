@@ -2,15 +2,20 @@ import QtQuick
 
 Item {
     id: root
-    height: 52
+    height: 48
 
     property int activeBlooms: 0
+    property int lastBloomMs: 0
 
     function spawnBloom(localPos) {
         if (MotionBudget.maxConcurrentBlooms === 0
                 || root.activeBlooms >= MotionBudget.maxConcurrentBlooms) {
             return
         }
+        var now = Date.now()
+        if (now - root.lastBloomMs < MotionBudget.bloomCooldownMs)
+            return
+        root.lastBloomMs = now
         var host = root.parent
         if (!host)
             return
@@ -32,15 +37,15 @@ Item {
     Row {
         id: brandRow
         anchors.left: parent.left
-        anchors.leftMargin: 20
+        anchors.leftMargin: InkTokens.rhythm * 2 + 4
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 10
+        spacing: InkTokens.rhythm
 
         Text {
             id: brand
             text: qsTr("深卷")
             font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 24
+            font.pixelSize: 22
             color: InkTokens.primaryText
             anchors.verticalCenter: parent.verticalCenter
 
@@ -54,8 +59,8 @@ Item {
 
         Rectangle {
             id: chop
-            width: 18
-            height: 18
+            width: 16
+            height: 16
             radius: 1
             rotation: 7
             anchors.verticalCenter: parent.verticalCenter
@@ -67,46 +72,34 @@ Item {
                 rotation: -7
                 text: qsTr("卷")
                 font.family: InkTokens.calligraphyFamily
-                font.pixelSize: 11
+                font.pixelSize: 10
                 color: InkTokens.cinnabar
             }
         }
 
         Rectangle {
             id: seal
-            width: 10
-            height: 10
-            radius: 1
-            rotation: 12
+            width: 8
+            height: 8
+            radius: 4
             anchors.verticalCenter: parent.verticalCenter
             color: {
                 if (typeof connection === "undefined")
                     return InkTokens.ink300
                 if (connection.connected)
-                    return InkTokens.ink900
+                    return InkTokens.connectedDot
                 if (connection.hasError)
                     return InkTokens.cinnabar
                 return InkTokens.ink300
             }
-        }
-
-        Text {
-            id: statusInline
-            width: Math.min(280, root.width - 220)
-            elide: Text.ElideRight
-            text: (typeof connection !== "undefined") ? connection.statusText : qsTr("等待连接…")
-            font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 12
-            color: (typeof connection !== "undefined" && connection.hasError)
-                   ? InkTokens.cinnabar : InkTokens.ink500
-            anchors.verticalCenter: parent.verticalCenter
+            opacity: (typeof connection !== "undefined" && connection.connecting) ? 0.55 : 1
         }
 
         Text {
             visible: typeof connection !== "undefined" && connection.hasError
             text: qsTr("重连")
             font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 13
+            font.pixelSize: 12
             color: InkTokens.cinnabar
             anchors.verticalCenter: parent.verticalCenter
 
@@ -126,17 +119,19 @@ Item {
 
     Row {
         anchors.right: parent.right
-        anchors.rightMargin: 18
+        anchors.rightMargin: InkTokens.rhythm * 2 + 2
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 16
+        spacing: InkTokens.rhythm * 2
 
         Text {
             objectName: "titleRefresh"
             text: qsTr("刷新")
             font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 13
+            font.pixelSize: 12
             color: InkTokens.ink500
+            opacity: refreshHover.hovered ? 0.72 : 1
             HoverHandler {
+                id: refreshHover
                 cursorShape: Qt.PointingHandCursor
             }
             MouseArea {
@@ -150,15 +145,21 @@ Item {
                         study.refresh()
                 }
             }
+            Behavior on opacity {
+                enabled: MotionBudget.hoverMs > 0
+                NumberAnimation { duration: MotionBudget.hoverMs }
+            }
         }
 
         Text {
             objectName: "titleSettings"
             text: qsTr("设置")
             font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 13
+            font.pixelSize: 12
             color: InkTokens.ink500
+            opacity: settingsHover.hovered ? 0.72 : 1
             HoverHandler {
+                id: settingsHover
                 cursorShape: Qt.PointingHandCursor
             }
             MouseArea {
@@ -172,14 +173,19 @@ Item {
                         study.openSettings()
                 }
             }
+            Behavior on opacity {
+                enabled: MotionBudget.hoverMs > 0
+                NumberAnimation { duration: MotionBudget.hoverMs }
+            }
         }
 
         Text {
             id: reduceLabel
             text: MotionBudget.reduceMotion ? qsTr("动效关") : qsTr("动效开")
             font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 13
+            font.pixelSize: 12
             color: InkTokens.ink500
+            opacity: reduceHover.hovered ? 0.72 : 1
             HoverHandler {
                 id: reduceHover
                 cursorShape: Qt.PointingHandCursor
@@ -189,14 +195,10 @@ Item {
                 acceptedButtons: Qt.LeftButton
                 onTapped: MotionBudget.reduceMotion = !MotionBudget.reduceMotion
             }
-        }
-
-        Text {
-            visible: reduceHover.hovered
-            text: MotionBudget.reduceMotion ? qsTr("已减动效") : qsTr("减少动态效果")
-            font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 11
-            color: InkTokens.ink300
+            Behavior on opacity {
+                enabled: MotionBudget.hoverMs > 0
+                NumberAnimation { duration: MotionBudget.hoverMs }
+            }
         }
     }
 
@@ -206,7 +208,7 @@ Item {
         anchors.right: parent.right
         height: 1
         color: InkTokens.hairline
-        opacity: 0.55
+        opacity: 0.45
         enabled: false
     }
 

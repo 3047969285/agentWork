@@ -17,6 +17,7 @@ qt_add_executable(dsh-desktop WIN32
   src/hooks/ConnectionHook.cpp
   src/hooks/StudyHook.cpp
   src/utils/StudyJson.cpp
+  src/utils/MarkdownFormat.cpp
   src/models/SessionListModel.cpp
   src/models/TranscriptModel.cpp
   src/services/host/HostProcess.cpp
@@ -87,6 +88,7 @@ add_test(NAME tst_host_args COMMAND tst_host_args)
 qt_add_executable(tst_study_json
   tests/tst_study_json.cpp
   src/utils/StudyJson.cpp
+  src/utils/MarkdownFormat.cpp
   src/models/TranscriptModel.cpp
 )
 target_include_directories(tst_study_json PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")

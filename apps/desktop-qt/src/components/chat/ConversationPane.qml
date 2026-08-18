@@ -10,39 +10,17 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: InkTokens.scrollPaper
-        opacity: 0.35
+        opacity: 0.22
         enabled: false
-    }
-
-    Text {
-        id: scrollTitle
-        visible: root.hasSession
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.topMargin: 10
-        anchors.leftMargin: 32
-        anchors.rightMargin: 32
-        height: visible ? 22 : 0
-        text: (typeof study !== "undefined") ? study.selectedTitle : ""
-        font.family: InkTokens.calligraphyFamily
-        font.pixelSize: 13
-        color: InkTokens.ink500
-        elide: Text.ElideRight
-        opacity: 0.85
     }
 
     ListView {
         id: transcript
         visible: !root.empty
-        anchors.top: scrollTitle.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 28
-        anchors.topMargin: scrollTitle.visible ? 4 : 28
+        anchors.fill: parent
+        anchors.margins: InkTokens.rhythm * 3
         clip: true
-        spacing: 18
+        spacing: InkTokens.rhythm * 2
         reuseItems: true
         cacheBuffer: 420
         pixelAligned: true
@@ -62,7 +40,7 @@ Item {
             required property bool streaming
 
             width: transcript.width
-            height: kind === "tool" ? toolCard.height : textCol.height
+            height: kind === "tool" ? toolCard.height : bubble.height
 
             ToolCard {
                 id: toolCard
@@ -75,27 +53,36 @@ Item {
                 card: rowRoot.card.length > 0 ? rowRoot.card : "generic"
             }
 
-            Column {
-                id: textCol
+            Item {
+                id: bubble
                 visible: rowRoot.kind !== "tool"
                 width: parent.width
-                spacing: 6
+                height: messageBody.y + messageBody.height
 
-                Text {
-                    text: rowRoot.role === "user" ? qsTr("问") : qsTr("答")
-                    font.family: InkTokens.calligraphyFamily
-                    font.pixelSize: 11
-                    color: rowRoot.role === "user" ? InkTokens.cinnabar : InkTokens.ink500
+                Rectangle {
+                    visible: rowRoot.role === "user"
+                    width: Math.min(parent.width * 0.88, messageBody.implicitWidth + InkTokens.rhythm * 3)
+                    height: messageBody.implicitHeight + InkTokens.rhythm * 2
+                    x: parent.width - width
+                    anchors.verticalCenter: messageBody.verticalCenter
+                    color: Qt.rgba(0.651, 0.239, 0.184, 0.06)
+                    radius: 1
                 }
 
                 Text {
-                    width: parent.width * 0.92
-                    text: rowRoot.text
-                    textFormat: Text.PlainText
+                    id: messageBody
+                    width: parent.width * (rowRoot.role === "user" ? 0.88 : 0.94)
+                    x: rowRoot.role === "user" ? parent.width - width : 0
+                    text: rowRoot.role === "user"
+                          ? rowRoot.text
+                          : ((typeof study !== "undefined")
+                             ? study.formatAssistantText(rowRoot.text)
+                             : rowRoot.text)
+                    textFormat: rowRoot.role === "user" ? Text.PlainText : Text.RichText
                     wrapMode: Text.Wrap
-                    font.family: InkTokens.calligraphyFamily
+                    font.family: InkTokens.bodyFamily
                     font.pixelSize: 15
-                    lineHeight: 1.45
+                    lineHeight: 1.5
                     color: InkTokens.ink900
                     opacity: rowRoot.streaming ? 0.82 : 1
                 }
@@ -124,16 +111,16 @@ Item {
     Column {
         visible: root.empty
         anchors.centerIn: parent
-        spacing: 8
+        spacing: InkTokens.rhythm
 
         Text {
             id: emptyGlyph
             anchors.horizontalCenter: parent.horizontalCenter
             text: qsTr("空")
             font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 88
+            font.pixelSize: 72
             color: InkTokens.ink900
-            opacity: 0.10
+            opacity: 0.08
 
             TapHandler {
                 acceptedButtons: Qt.LeftButton
@@ -161,7 +148,7 @@ Item {
                 return qsTr("纸净，待你写下第一句")
             }
             font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 16
+            font.pixelSize: 15
             color: InkTokens.ink500
         }
     }

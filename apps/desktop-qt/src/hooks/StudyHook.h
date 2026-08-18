@@ -50,6 +50,7 @@ class StudyHook : public QObject {
   Q_PROPERTY(bool onboardingOpen READ onboardingOpen NOTIFY onboardingOpenChanged)
   Q_PROPERTY(QString onboardingKeyRef READ onboardingKeyRef NOTIFY onboardingKeyRefChanged)
   Q_PROPERTY(bool streamOpen READ streamOpen NOTIFY streamOpenChanged)
+  Q_PROPERTY(bool workspacePickerOpen READ workspacePickerOpen NOTIFY workspacePickerOpenChanged)
 
  public:
   explicit StudyHook(QObject *parent = nullptr);
@@ -93,6 +94,7 @@ class StudyHook : public QObject {
   bool onboardingOpen() const;
   QString onboardingKeyRef() const;
   bool streamOpen() const;
+  bool workspacePickerOpen() const;
 
   void setWorkspaceTitle(const QString &title);
   void setWorkspaceId(const QString &id);
@@ -129,12 +131,18 @@ class StudyHook : public QObject {
   void setOnboardingOpen(bool open);
   void setOnboardingKeyRef(const QString &ref);
   void setStreamOpen(bool open);
+  void setWorkspacePickerOpen(bool open);
 
   Q_INVOKABLE void selectSession(const QString &sessionId);
   Q_INVOKABLE void createSession();
   Q_INVOKABLE void sendPrompt(const QString &text);
   Q_INVOKABLE void refresh();
   Q_INVOKABLE void selectWorkspace(const QString &workspaceId);
+  Q_INVOKABLE void toggleWorkspacePicker();
+  Q_INVOKABLE void closeWorkspacePicker();
+  Q_INVOKABLE void createWorkspaceFromPath(const QString &path);
+  Q_INVOKABLE void pickAndCreateWorkspace();
+  Q_INVOKABLE QString formatAssistantText(const QString &text);
   Q_INVOKABLE void selectModel(const QString &provider, const QString &model);
   Q_INVOKABLE void toggleModels();
   Q_INVOKABLE void cancelTurn();
@@ -195,11 +203,15 @@ class StudyHook : public QObject {
   void onboardingOpenChanged();
   void onboardingKeyRefChanged();
   void streamOpenChanged();
+  void workspacePickerOpenChanged();
   void selectRequested(const QString &sessionId);
   void createRequested();
   void sendRequested(const QString &text);
   void refreshRequested();
   void workspaceRequested(const QString &workspaceId);
+  void workspaceCreateRequested(const QString &path);
+  void workspacePickRequested();
+  void workspacePickFallbackRequested();
   void modelRequested(const QString &provider, const QString &model);
   void cancelRequested();
   void approvalAnswerRequested(const QString &outcome);
@@ -257,4 +269,5 @@ class StudyHook : public QObject {
   bool m_onboardingOpen = false;
   QString m_onboardingKeyRef;
   bool m_streamOpen = false;
+  bool m_workspacePickerOpen = false;
 };

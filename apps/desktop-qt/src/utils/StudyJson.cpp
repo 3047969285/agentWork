@@ -358,6 +358,12 @@ QJsonObject createPayload(const QString &workspaceId) {
   return payload;
 }
 
+QJsonObject workspaceCreatePayload(const QString &path) {
+  QJsonObject payload;
+  payload.insert(QStringLiteral("path"), path);
+  return payload;
+}
+
 QJsonObject modelsPayload(const QString &sessionId) {
   QJsonObject payload;
   payload.insert(QStringLiteral("sessionId"), sessionId);

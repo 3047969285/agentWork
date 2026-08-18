@@ -42,6 +42,8 @@ class Application : public QObject {
   void onSendRequested(const QString &text);
   void onRefreshRequested();
   void onWorkspaceRequested(const QString &workspaceId);
+  void onWorkspaceCreateRequested(const QString &path);
+  void onWorkspacePickRequested();
   void onModelRequested(const QString &provider, const QString &model);
   void onCancelRequested();
   void onApprovalAnswerRequested(const QString &outcome);

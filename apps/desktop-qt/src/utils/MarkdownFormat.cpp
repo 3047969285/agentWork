@@ -43,10 +43,10 @@ QString markdownToHtml(const QString &markdown) {
   normalized.replace(QRegularExpression(QStringLiteral("\\n{3,}")), QStringLiteral("\n\n"));
 
   const QStringList lines = normalized.split(QLatin1Char('\n'));
-  QString html;
-  html.reserve(normalized.size() + 64);
+  QString html = QStringLiteral("<div style=\"margin:0;padding:0;line-height:1.22;\">");
+  html.reserve(normalized.size() + 128);
   bool inList = false;
-  bool pendingBreak = false;
+  bool pendingParagraphGap = false;
 
   auto closeList = [&]() {
     if (inList) {
@@ -55,38 +55,39 @@ QString markdownToHtml(const QString &markdown) {
     }
   };
 
-  auto flushBreak = [&]() {
-    if (pendingBreak) {
-      html += QStringLiteral("<br/>");
-      pendingBreak = false;
+  auto flushParagraphGap = [&]() {
+    if (pendingParagraphGap) {
+      html += QStringLiteral("<div style=\"margin:0;padding:0;height:0.08em;\"></div>");
+      pendingParagraphGap = false;
     }
   };
 
   for (const QString &rawLine : lines) {
     const QString line = rawLine.trimmed();
     if (line.startsWith(QLatin1String("- ")) || line.startsWith(QLatin1String("* "))) {
-      flushBreak();
+      flushParagraphGap();
       if (!inList) {
         html += QStringLiteral(
-            "<ul style=\"margin:0;padding-left:1.15em;line-height:1.35;\">");
+            "<ul style=\"margin:0.02em 0 0.04em 0;padding-left:1.0em;line-height:1.2;\">");
         inList = true;
       }
-      html += QStringLiteral("<li style=\"margin:0;padding:0;\">") + inlineFormat(line.mid(2).trimmed()) +
+      html += QStringLiteral("<li style=\"margin:0 0 0.01em 0;padding:0;\">") + inlineFormat(line.mid(2).trimmed()) +
               QStringLiteral("</li>");
       continue;
     }
 
     closeList();
     if (line.isEmpty()) {
-      pendingBreak = true;
+      pendingParagraphGap = true;
       continue;
     }
-    flushBreak();
-    html += QStringLiteral("<p style=\"margin:0 0 0.15em 0;line-height:1.4;\">") + inlineFormat(line) +
+    flushParagraphGap();
+    html += QStringLiteral("<p style=\"margin:0 0 0.02em 0;line-height:1.22;\">") + inlineFormat(line) +
             QStringLiteral("</p>");
   }
   closeList();
-  flushBreak();
+  flushParagraphGap();
+  html += QStringLiteral("</div>");
   return html;
 }
 

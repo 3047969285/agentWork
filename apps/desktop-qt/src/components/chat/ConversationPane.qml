@@ -18,9 +18,9 @@ Item {
         id: transcript
         visible: !root.empty
         anchors.fill: parent
-        anchors.margins: InkTokens.rhythm * 2
+        anchors.margins: InkTokens.rhythm
         clip: true
-        spacing: 6
+        spacing: 2
         reuseItems: true
         cacheBuffer: 420
         pixelAligned: true
@@ -61,8 +61,8 @@ Item {
 
                 Rectangle {
                     visible: rowRoot.role === "user"
-                    width: Math.min(parent.width * 0.88, messageBody.implicitWidth + 20)
-                    height: messageBody.implicitHeight + 16
+                    width: Math.min(parent.width * 0.88, messageBody.implicitWidth + 16)
+                    height: messageBody.implicitHeight + 8
                     x: parent.width - width
                     anchors.verticalCenter: messageBody.verticalCenter
                     color: Qt.rgba(0.651, 0.239, 0.184, 0.06)
@@ -82,7 +82,7 @@ Item {
                     wrapMode: Text.Wrap
                     font.family: InkTokens.bodyFamily
                     font.pixelSize: 15
-                    lineHeight: 1.4
+                    lineHeight: 1.22
                     color: InkTokens.ink900
                     opacity: rowRoot.streaming ? 0.82 : 1
                 }

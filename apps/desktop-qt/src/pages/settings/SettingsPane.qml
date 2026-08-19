@@ -34,6 +34,7 @@ Item {
     }
 
     Rectangle {
+        z: 0
         anchors.fill: parent
         color: Qt.rgba(0.102, 0.086, 0.071, 0.18)
         TapHandler {
@@ -44,6 +45,7 @@ Item {
 
     Rectangle {
         id: sheet
+        z: 1
         width: Math.min(480, parent.width - 48)
         height: Math.min(680, parent.height - 72)
         anchors.right: parent.right
@@ -54,10 +56,6 @@ Item {
         border.width: 1
         border.color: InkTokens.hairline
         radius: 1
-
-        TapHandler {
-            acceptedButtons: Qt.LeftButton
-        }
 
         Text {
             id: heading

@@ -39,10 +39,14 @@ QString inlineFormat(const QString &line) {
 }  // namespace
 
 QString markdownToHtml(const QString &markdown) {
-  const QStringList lines = markdown.split(QLatin1Char('\n'));
+  QString normalized = markdown;
+  normalized.replace(QRegularExpression(QStringLiteral("\\n{3,}")), QStringLiteral("\n\n"));
+
+  const QStringList lines = normalized.split(QLatin1Char('\n'));
   QString html;
-  html.reserve(markdown.size() + 64);
+  html.reserve(normalized.size() + 64);
   bool inList = false;
+  bool pendingBreak = false;
 
   auto closeList = [&]() {
     if (inList) {
@@ -51,25 +55,38 @@ QString markdownToHtml(const QString &markdown) {
     }
   };
 
+  auto flushBreak = [&]() {
+    if (pendingBreak) {
+      html += QStringLiteral("<br/>");
+      pendingBreak = false;
+    }
+  };
+
   for (const QString &rawLine : lines) {
     const QString line = rawLine.trimmed();
     if (line.startsWith(QLatin1String("- ")) || line.startsWith(QLatin1String("* "))) {
+      flushBreak();
       if (!inList) {
-        html += QStringLiteral("<ul style=\"margin:0;padding-left:1.2em;\">");
+        html += QStringLiteral(
+            "<ul style=\"margin:0;padding-left:1.15em;line-height:1.35;\">");
         inList = true;
       }
-      html += QStringLiteral("<li>") + inlineFormat(line.mid(2).trimmed()) + QStringLiteral("</li>");
+      html += QStringLiteral("<li style=\"margin:0;padding:0;\">") + inlineFormat(line.mid(2).trimmed()) +
+              QStringLiteral("</li>");
       continue;
     }
 
     closeList();
     if (line.isEmpty()) {
-      html += QStringLiteral("<br/>");
+      pendingBreak = true;
       continue;
     }
-    html += QStringLiteral("<p style=\"margin:0 0 0.35em 0;\">") + inlineFormat(line) + QStringLiteral("</p>");
+    flushBreak();
+    html += QStringLiteral("<p style=\"margin:0 0 0.15em 0;line-height:1.4;\">") + inlineFormat(line) +
+            QStringLiteral("</p>");
   }
   closeList();
+  flushBreak();
   return html;
 }
 

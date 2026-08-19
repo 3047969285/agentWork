@@ -16,6 +16,7 @@ Item {
     readonly property bool modelsOpen: typeof study !== "undefined" && study.modelsOpen
     readonly property bool permissionsOpen: typeof study !== "undefined" && study.permissionsOpen
     readonly property bool slashOpen: typeof study !== "undefined" && input.text.trim().startsWith("/")
+    readonly property bool overlayWanted: root.modelsOpen || root.permissionsOpen || root.slashOpen
 
     function submit() {
         if (typeof study === "undefined")
@@ -47,6 +48,59 @@ Item {
             study.toggleModels()
         if (study.permissionsOpen)
             study.togglePermissions()
+    }
+
+    function syncOverlayOpen() {
+        if (root.overlayWanted) {
+            if (!overlayMenu.opened)
+                openOverlaySoon.start()
+        } else {
+            openOverlaySoon.stop()
+            if (overlayMenu.opened)
+                overlayMenu.close()
+        }
+    }
+
+    onSlashOpenChanged: syncOverlayOpen()
+
+    Connections {
+        target: typeof study !== "undefined" ? study : null
+        function onModelsOpenChanged() {
+            root.syncOverlayOpen()
+        }
+        function onPermissionsOpenChanged() {
+            root.syncOverlayOpen()
+        }
+    }
+
+    Timer {
+        id: openOverlaySoon
+        interval: 0
+        repeat: false
+        onTriggered: {
+            if (root.overlayWanted && !overlayMenu.opened)
+                overlayMenu.open()
+        }
+    }
+
+    Timer {
+        id: deferPermSoon
+        interval: 0
+        repeat: false
+        onTriggered: {
+            if (typeof study !== "undefined")
+                study.togglePermissions()
+        }
+    }
+
+    Timer {
+        id: deferModelSoon
+        interval: 0
+        repeat: false
+        onTriggered: {
+            if (typeof study !== "undefined")
+                study.toggleModels()
+        }
     }
 
     Item {
@@ -107,10 +161,29 @@ Item {
                                 return
                             if (modelData.action === "plan")
                                 study.togglePlan()
-                            else if (modelData.action === "perm")
-                                study.togglePermissions()
-                            else if (modelData.action === "model")
-                                study.toggleModels()
+                            else if (modelData.action === "perm") {
+                                if (study.permissionsOpen || overlayMenu.opened) {
+                                    deferPermSoon.stop()
+                                    if (study.permissionsOpen)
+                                        study.togglePermissions()
+                                    overlayMenu.close()
+                                    return
+                                }
+                                if (study.modelsOpen)
+                                    study.toggleModels()
+                                deferPermSoon.start()
+                            } else if (modelData.action === "model") {
+                                if (study.modelsOpen || overlayMenu.opened) {
+                                    deferModelSoon.stop()
+                                    if (study.modelsOpen)
+                                        study.toggleModels()
+                                    overlayMenu.close()
+                                    return
+                                }
+                                if (study.permissionsOpen)
+                                    study.togglePermissions()
+                                deferModelSoon.start()
+                            }
                             else if (modelData.action === "attach")
                                 picker.open()
                         }
@@ -235,6 +308,7 @@ Item {
 
     Popup {
         id: overlayMenu
+        parent: root
         modal: false
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -242,9 +316,11 @@ Item {
         width: Math.min(360, root.width - InkTokens.rhythm * 6)
         x: InkTokens.rhythm * 3
         y: -implicitHeight - InkTokens.rhythm
-        visible: root.modelsOpen || root.permissionsOpen || root.slashOpen
 
-        onClosed: root.closeOverlays()
+        onClosed: {
+            openOverlaySoon.stop()
+            root.closeOverlays()
+        }
 
         background: Rectangle {
             color: InkTokens.scrollPaper

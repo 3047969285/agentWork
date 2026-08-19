@@ -275,7 +275,16 @@ class TstStudyJson : public QObject {
     QVERIFY(html.contains(QStringLiteral("<b>bold</b>")));
     QVERIFY(html.contains(QStringLiteral("<code>code</code>")));
     QVERIFY(html.contains(QStringLiteral("<ul")));
-    QVERIFY(html.contains(QStringLiteral("<li>one</li>")));
+    QVERIFY(html.contains(QStringLiteral("one</li>")));
+    QVERIFY(html.contains(QStringLiteral("two</li>")));
+  }
+
+  void markdownToHtml_collapsesExtraBlankLines() {
+    const QString html =
+        dsh::study::markdownToHtml(QStringLiteral("first\n\n\n\nsecond"));
+    QCOMPARE(html.count(QStringLiteral("<br/>")), 1);
+    QVERIFY(html.contains(QStringLiteral("first")));
+    QVERIFY(html.contains(QStringLiteral("second")));
   }
 };
 

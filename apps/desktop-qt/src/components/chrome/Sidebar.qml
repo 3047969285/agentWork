@@ -11,6 +11,26 @@ Item {
         function onWorkspacePickFallbackRequested() {
             folderPicker.open()
         }
+        function onWorkspacePickerOpenChanged() {
+            if (typeof study === "undefined")
+                return
+            if (study.workspacePickerOpen) {
+                if (!workspacePicker.opened)
+                    workspacePicker.open()
+            } else if (workspacePicker.opened) {
+                workspacePicker.close()
+            }
+        }
+    }
+
+    Timer {
+        id: openWorkspacePickerSoon
+        interval: 0
+        repeat: false
+        onTriggered: {
+            if (typeof study !== "undefined" && !study.workspacePickerOpen)
+                study.toggleWorkspacePicker()
+        }
     }
 
     Rectangle {
@@ -20,144 +40,87 @@ Item {
         enabled: false
     }
 
-    Column {
+    Item {
         id: head
+        objectName: "sidebarWorkspaceHit"
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: InkTokens.rhythm * 2
         anchors.leftMargin: InkTokens.rhythm * 2 + 2
         anchors.rightMargin: InkTokens.rhythm * 2 + 2
-        spacing: 2
+        height: headColumn.height
+        z: 2
 
-        Text {
-            text: qsTr("工作区")
-            font.family: InkTokens.calligraphyFamily
-            font.pixelSize: 11
-            color: InkTokens.ink500
-        }
-
-        Row {
+        Column {
+            id: headColumn
             width: parent.width
-            spacing: 6
+            spacing: 2
 
             Text {
-                id: workspaceName
-                objectName: "sidebarWorkspaceTitle"
-                width: parent.width - chevron.width - 6
-                text: (typeof study !== "undefined") ? study.workspaceTitle : qsTr("未入席")
+                text: qsTr("工作区")
                 font.family: InkTokens.calligraphyFamily
-                font.pixelSize: 16
-                color: InkTokens.primaryText
-                elide: Text.ElideMiddle
-                opacity: workspaceHover.hovered ? 0.72 : 1
-                Behavior on opacity {
-                    enabled: MotionBudget.hoverMs > 0
-                    NumberAnimation { duration: MotionBudget.hoverMs }
-                }
-            }
-
-            Text {
-                id: chevron
-                text: (typeof study !== "undefined" && study.workspacePickerOpen) ? "▾" : "▸"
                 font.pixelSize: 11
                 color: InkTokens.ink500
-                anchors.verticalCenter: workspaceName.verticalCenter
             }
-        }
 
-        HoverHandler {
-            id: workspaceHover
-            cursorShape: Qt.PointingHandCursor
-        }
-        MouseArea {
-            anchors.fill: head
-            anchors.topMargin: 14
-            anchors.bottomMargin: -2
-            acceptedButtons: Qt.LeftButton
-            preventStealing: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (typeof study !== "undefined")
-                    study.toggleWorkspacePicker()
-            }
-        }
-    }
-
-    Row {
-        id: featureChips
-        anchors.top: head.bottom
-        anchors.topMargin: InkTokens.rhythm
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.leftMargin: InkTokens.rhythm * 2 + 2
-        anchors.rightMargin: InkTokens.rhythm * 2 + 2
-        spacing: 6
-        clip: true
-
-        Repeater {
-            model: {
-                var chips = []
-                if (typeof study === "undefined")
-                    return chips
-                if (study.modelLabel.length > 0 && study.modelLabel !== qsTr("模型"))
-                    chips.push({ label: study.modelLabel, kind: "model" })
-                else if (study.selectedSessionId.length > 0)
-                    chips.push({ label: study.modelLabel, kind: "model" })
-                if (study.planKnown)
-                    chips.push({ label: study.planActive ? qsTr("计划") : qsTr("计划"), kind: "plan", active: study.planActive })
-                if (study.permissionLabel.length > 0)
-                    chips.push({ label: study.permissionLabel, kind: "perm" })
-                if (study.attachments.length > 0)
-                    chips.push({ label: qsTr("附页") + " " + study.attachments.length, kind: "attach" })
-                return chips
-            }
-            delegate: Rectangle {
-                required property var modelData
-                height: 20
-                width: chipLabel.implicitWidth + 12
-                radius: 1
-                color: Qt.rgba(0.651, 0.239, 0.184, modelData.active ? 0.12 : 0.05)
-                border.width: modelData.active ? 1 : 0
-                border.color: Qt.rgba(0.651, 0.239, 0.184, 0.35)
+            Row {
+                width: parent.width
+                spacing: 6
 
                 Text {
-                    id: chipLabel
-                    anchors.centerIn: parent
-                    text: modelData.label
+                    id: workspaceName
+                    objectName: "sidebarWorkspaceTitle"
+                    width: parent.width - chevron.width - 6
+                    text: (typeof study !== "undefined") ? study.workspaceTitle : qsTr("未入席")
                     font.family: InkTokens.calligraphyFamily
-                    font.pixelSize: 10
-                    color: modelData.active ? InkTokens.cinnabar : InkTokens.ink700
-                }
-
-                HoverHandler {
-                    cursorShape: Qt.PointingHandCursor
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.LeftButton
-                    preventStealing: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (typeof study === "undefined")
-                            return
-                        if (modelData.kind === "model")
-                            study.toggleModels()
-                        else if (modelData.kind === "plan")
-                            study.togglePlan()
-                        else if (modelData.kind === "perm")
-                            study.togglePermissions()
-                        else if (modelData.kind === "attach")
-                            attachPicker.open()
+                    font.pixelSize: 16
+                    color: InkTokens.primaryText
+                    elide: Text.ElideMiddle
+                    opacity: workspaceHit.containsMouse ? 0.72 : 1
+                    Behavior on opacity {
+                        enabled: MotionBudget.hoverMs > 0
+                        NumberAnimation { duration: MotionBudget.hoverMs }
                     }
                 }
+
+                Text {
+                    id: chevron
+                    text: (typeof study !== "undefined" && study.workspacePickerOpen) ? "▾" : "▸"
+                    font.pixelSize: 11
+                    color: InkTokens.ink500
+                    anchors.verticalCenter: workspaceName.verticalCenter
+                }
+            }
+        }
+
+        // Overlay hit target (not a Column child) so layout cannot zero-size or bury the MouseArea.
+        MouseArea {
+            id: workspaceHit
+            anchors.fill: parent
+            z: 10
+            acceptedButtons: Qt.LeftButton
+            preventStealing: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                if (typeof study === "undefined")
+                    return
+                // Same click that opens must not be treated as PressOutside; defer open.
+                if (study.workspacePickerOpen || workspacePicker.opened) {
+                    openWorkspacePickerSoon.stop()
+                    study.closeWorkspacePicker()
+                    workspacePicker.close()
+                    return
+                }
+                openWorkspacePickerSoon.start()
             }
         }
     }
 
     Text {
         id: sessionHeading
-        anchors.top: featureChips.bottom
+        anchors.top: head.bottom
         anchors.left: parent.left
         anchors.leftMargin: InkTokens.rhythm * 2 + 2
         anchors.topMargin: InkTokens.rhythm + 4
@@ -313,6 +276,7 @@ Item {
 
     Popup {
         id: workspacePicker
+        parent: root
         modal: false
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -320,9 +284,9 @@ Item {
         width: root.width - InkTokens.rhythm * 2
         x: InkTokens.rhythm
         y: head.y + head.height + 2
-        visible: typeof study !== "undefined" && study.workspacePickerOpen
 
         onClosed: {
+            openWorkspacePickerSoon.stop()
             if (typeof study !== "undefined" && study.workspacePickerOpen)
                 study.closeWorkspacePicker()
         }
@@ -436,19 +400,6 @@ Item {
         }
     }
 
-    FileDialog {
-        id: attachPicker
-        fileMode: FileDialog.OpenFiles
-        nameFilters: [qsTr("图像 (*.png *.jpg *.jpeg *.webp *.gif)")]
-        onAccepted: {
-            if (typeof study === "undefined")
-                return
-            var files = selectedFiles
-            for (var i = 0; i < files.length; ++i)
-                study.attachFromUrl(files[i])
-        }
-    }
-
     Rectangle {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
@@ -456,5 +407,6 @@ Item {
         width: 1
         color: InkTokens.hairline
         opacity: 0.7
+        enabled: false
     }
 }

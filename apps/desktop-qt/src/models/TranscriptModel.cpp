@@ -82,6 +82,10 @@ void TranscriptModel::applySessionEvent(const QJsonObject &event, const QJsonVal
   if (row.kind.isEmpty()) {
     return;
   }
+  // Seq-based dedup: drop events already present from history hydration.
+  if (row.seq > 0 && row.seq <= lastSeq()) {
+    return;
+  }
   if (row.kind == QLatin1String("tool") && !row.callId.isEmpty()) {
     const int existing = findToolRow(row.callId);
     if (existing >= 0) {

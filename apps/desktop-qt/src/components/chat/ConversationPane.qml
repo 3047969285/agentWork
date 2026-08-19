@@ -53,38 +53,40 @@ Item {
                 card: rowRoot.card.length > 0 ? rowRoot.card : "generic"
             }
 
+            // Chat bubble: user right-aligned, assistant left-aligned
             Item {
                 id: bubble
                 visible: rowRoot.kind !== "tool"
                 width: parent.width
-                height: messageBody.y + messageBody.height
+                height: bubbleRect.height + 4
 
                 Rectangle {
-                    visible: rowRoot.role === "user"
-                    width: Math.min(parent.width * 0.88, messageBody.implicitWidth + 16)
-                    height: messageBody.implicitHeight + 8
-                    x: parent.width - width
-                    anchors.verticalCenter: messageBody.verticalCenter
-                    color: Qt.rgba(0.651, 0.239, 0.184, 0.06)
-                    radius: 1
-                }
-
-                Text {
-                    id: messageBody
-                    width: parent.width * (rowRoot.role === "user" ? 0.88 : 0.94)
+                    id: bubbleRect
+                    width: Math.min(parent.width * 0.78, messageBody.implicitWidth + 20)
+                    height: messageBody.implicitHeight + 12
                     x: rowRoot.role === "user" ? parent.width - width : 0
-                    text: rowRoot.role === "user"
-                          ? rowRoot.text
-                          : ((typeof study !== "undefined")
-                             ? study.formatAssistantText(rowRoot.text)
-                             : rowRoot.text)
-                    textFormat: rowRoot.role === "user" ? Text.PlainText : Text.RichText
-                    wrapMode: Text.Wrap
-                    font.family: InkTokens.bodyFamily
-                    font.pixelSize: 15
-                    lineHeight: 1.22
-                    color: InkTokens.ink900
-                    opacity: rowRoot.streaming ? 0.82 : 1
+                    radius: 2
+                    color: rowRoot.role === "user"
+                           ? Qt.rgba(0.651, 0.239, 0.184, 0.06)
+                           : Qt.rgba(0.35, 0.33, 0.30, 0.04)
+
+                    Text {
+                        id: messageBody
+                        anchors.centerIn: parent
+                        width: parent.width - 16
+                        text: rowRoot.role === "user"
+                              ? rowRoot.text
+                              : ((typeof study !== "undefined")
+                                 ? study.formatAssistantText(rowRoot.text)
+                                 : rowRoot.text)
+                        textFormat: rowRoot.role === "user" ? Text.PlainText : Text.RichText
+                        wrapMode: Text.Wrap
+                        font.family: InkTokens.bodyFamily
+                        font.pixelSize: 15
+                        lineHeight: 1.22
+                        color: InkTokens.ink900
+                        opacity: rowRoot.streaming ? 0.82 : 1
+                    }
                 }
             }
         }

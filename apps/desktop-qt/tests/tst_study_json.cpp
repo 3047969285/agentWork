@@ -87,6 +87,53 @@ class TstStudyJson : public QObject {
     QCOMPARE(model.data(model.index(1), TranscriptModel::TextRole).toString(), QStringLiteral("先从目录起笔。"));
   }
 
+  void applySessionEvent_dropsDuplicateSeq() {
+    QJsonArray events;
+    events.append(QJsonObject{
+        {QStringLiteral("event"),
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("user/message")},
+                     {QStringLiteral("seq"), 1},
+                     {QStringLiteral("data"),
+                      QJsonObject{{QStringLiteral("source"), QJsonObject{{QStringLiteral("kind"), QStringLiteral("user")}}},
+                                  {QStringLiteral("content"),
+                                   QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("text")},
+                                                          {QStringLiteral("text"), QStringLiteral("你好")}}}}}}}}});
+    events.append(QJsonObject{
+        {QStringLiteral("event"),
+         QJsonObject{{QStringLiteral("type"), QStringLiteral("assistant/message")},
+                     {QStringLiteral("seq"), 2},
+                     {QStringLiteral("data"),
+                      QJsonObject{{QStringLiteral("message"),
+                                   QJsonObject{{QStringLiteral("content"),
+                                                QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("text")},
+                                                                       {QStringLiteral("text"), QStringLiteral("欢迎")}}}}}}}}}}});
+    TranscriptModel model;
+    model.resetFromHistory(events);
+    QCOMPARE(model.rowCount(), 2);
+    // Replay the same assistant/message via live event — should be deduped
+    QJsonObject liveEvent;
+    liveEvent.insert(QStringLiteral("type"), QStringLiteral("assistant/message"));
+    liveEvent.insert(QStringLiteral("seq"), 2);
+    liveEvent.insert(QStringLiteral("data"),
+                     QJsonObject{{QStringLiteral("message"),
+                                  QJsonObject{{QStringLiteral("content"),
+                                               QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("text")},
+                                                                      {QStringLiteral("text"), QStringLiteral("欢迎")}}}}}}});
+    model.applySessionEvent(liveEvent, QJsonValue());
+    QCOMPARE(model.rowCount(), 2);
+    // A genuinely new event with higher seq should still append
+    QJsonObject newEvent;
+    newEvent.insert(QStringLiteral("type"), QStringLiteral("assistant/message"));
+    newEvent.insert(QStringLiteral("seq"), 3);
+    newEvent.insert(QStringLiteral("data"),
+                    QJsonObject{{QStringLiteral("message"),
+                                 QJsonObject{{QStringLiteral("content"),
+                                              QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("text")},
+                                                                     {QStringLiteral("text"), QStringLiteral("新回复")}}}}}}});
+    model.applySessionEvent(newEvent, QJsonValue());
+    QCOMPARE(model.rowCount(), 3);
+  }
+
   void promptPayload_matchesSessionPromptWire() {
     const QJsonObject payload = dsh::study::promptPayload(QStringLiteral("sid-1"), QStringLiteral("落墨"));
     QCOMPARE(payload.value(QStringLiteral("sessionId")).toString(), QStringLiteral("sid-1"));

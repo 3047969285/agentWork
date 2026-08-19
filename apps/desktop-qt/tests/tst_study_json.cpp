@@ -282,7 +282,8 @@ class TstStudyJson : public QObject {
   void markdownToHtml_collapsesExtraBlankLines() {
     const QString html =
         dsh::study::markdownToHtml(QStringLiteral("first\n\n\n\nsecond"));
-    QCOMPARE(html.count(QStringLiteral("<br/>")), 1);
+    // 3+ blank lines collapse to a single paragraph-gap spacer div
+    QCOMPARE(html.count(QStringLiteral("height:0.08em")), 1);
     QVERIFY(html.contains(QStringLiteral("first")));
     QVERIFY(html.contains(QStringLiteral("second")));
   }

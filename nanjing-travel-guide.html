@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#fbfbfd" />
+  <title>南京四日游 · 国庆轻松版攻略</title>
+  <style>
+    :root {
+      --bg: #fbfbfd;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --accent: #0071e3;
+      --accent-soft: rgba(0, 113, 227, 0.12);
+      --border: rgba(0, 0, 0, 0.08);
+      --success: #34c759;
+      --warning: #ff9f0a;
+      --danger-bg: rgba(255, 59, 48, 0.08);
+      --danger: #ff3b30;
+      --radius: 16px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+      --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+
+    body {
+      min-height: 100dvh;
+      padding-top: calc(var(--safe-top) + 56px);
+      padding-bottom: calc(var(--safe-bottom) + 88px);
+    }
+
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: calc(var(--safe-top) + 10px) 16px 10px;
+      background: rgba(251, 251, 253, 0.88);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .topbar h1 {
+      font-family: var(--display);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar .sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .edit-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 4px 8px;
+      border-radius: 999px;
+      display: none;
+    }
+
+    body.editing .edit-badge { display: inline-block; }
+
+    .toolbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 100;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 10px 12px calc(var(--safe-bottom) + 10px);
+      background: rgba(251, 251, 253, 0.92);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn.danger {
+      color: var(--danger);
+      background: var(--danger-bg);
+      border-color: rgba(255, 59, 48, 0.2);
+    }
+
+    .btn.active {
+      box-shadow: inset 0 0 0 2px var(--accent);
+      color: var(--accent);
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 12px 16px 24px;
+    }
+
+    .hero {
+      background:
+        radial-gradient(circle at 90% 0%, rgba(0, 113, 227, 0.08), transparent 35%),
+        var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .hero .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .hero h2 {
+      font-family: var(--display);
+      font-size: 28px;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      margin-bottom: 10px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .chip {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+
+    section.block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.03);
+    }
+
+    .block-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .block-head h3 {
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .copy-section {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: none;
+      border: none;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .block-body {
+      padding: 14px 16px 16px;
+    }
+
+    .editable {
+      outline: none;
+      min-height: 1em;
+      word-break: break-word;
+    }
+
+    body.editing .editable {
+      background: rgba(0, 113, 227, 0.04);
+      border-radius: 8px;
+      box-shadow: inset 0 0 0 1px rgba(0, 113, 227, 0.18);
+      padding: 8px;
+      margin: -8px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 10px 0;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--bg);
+      font-weight: 700;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    ul, ol {
+      padding-left: 1.2em;
+      margin: 8px 0;
+    }
+
+    li + li { margin-top: 6px; }
+
+    .day-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: var(--bg);
+    }
+
+    .day-card:last-child { margin-bottom: 0; }
+
+    .day-title {
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .route {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      margin-top: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: calc(var(--safe-top) + 72px);
+      transform: translateX(-50%) translateY(-12px);
+      background: rgba(29, 29, 31, 0.92);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 999px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 200;
+      max-width: calc(100% - 32px);
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (min-width: 768px) {
+      .toolbar {
+        max-width: 720px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 20px 20px 0 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>南京四日游攻略</h1>
+      <div class="sub">国庆轻松版 · 可编辑 · 一键复制</div>
+    </div>
+    <span class="edit-badge">编辑中</span>
+  </header>
+
+  <main id="app">
+    <article class="hero">
+      <span class="tag">TRAVEL GUIDE</span>
+      <h2 class="editable" data-key="title" contenteditable="false">南京四日游 · 国庆轻松版</h2>
+      <p class="editable hint" data-key="summary" contenteditable="false">
+        预算 4000–5000 元/人 · 10 月 2–5 日示例 · 每天 1 个重点景点 · 地铁为主 · 连住大行宫/新街口
+      </p>
+      <div class="chips">
+        <span class="chip">🎯 轻松少走路</span>
+        <span class="chip">🚇 地铁出行</span>
+        <span class="chip">💰 4000–5000</span>
+        <span class="chip">📅 国庆档</span>
+      </div>
+    </article>
+
+    <section class="block" data-section="budget">
+      <div class="block-head">
+        <h3>💰 预算分配</h3>
+        <button type="button" class="copy-section" data-copy-section="budget">复制本节</button>
+      </div>
+      <div class="block-body editable" data-key="budget" contenteditable="false">
+        <table>
+          <thead>
+            <tr><th>项目</th><th>建议</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>大交通</td><td>1500–2200</td><td>青岛→南京南 高铁二等座约 400–700/单程</td></tr>
+            <tr><td>住宿 4 晚</td><td>1200–1800</td><td>大行宫/新街口 300–450/晚 连锁酒店</td></tr>
+            <tr><td>餐饮</td><td>600–900</td><td>人均 80–120/天</td></tr>
+            <tr><td>门票+观光车</td><td>350–550</td><td>钟山联票+观光车30、总统府等</td></tr>
+            <tr><td>市内交通</td><td>80–120</td><td>地铁一码通</td></tr>
+            <tr><td>机动</td><td>200–400</td><td>咖啡、零食、应急</td></tr>
+            <tr><td><strong>合计</strong></td><td><strong>3930–4970</strong></td><td>控制在 4000–5000 内</td></tr>
+          </tbody>
+        </table>
+        <p><strong>5000 档可加：</strong>秦淮河画舫 1 次、台城城墙、更好的淮扬菜一顿。</p>
+      </div>
+    </section>
+
+    <section class="block" data-section="hotel">
+      <div class="block-head">
+        <h3>🏨 住宿建议</h3>
+        <button type="button" class="copy-section" data-copy-section="hotel">复制本节</button>
+      </div>
+      <div class="block-body editable" data-key="hotel" contenteditable="false">
+        <p><strong>首选：</strong>大行宫站 或 新街口站 附近，连住 4 晚不换酒店。</p>
+        <ul>
+          <li><strong>大行宫</strong>（推荐）：2+3 号线，去总统府步行 5 分钟，去夫子庙 1 站，比夫子庙安静。320–450/晚</li>
+          <li><strong>新街口</strong>：1+2 号线，吃饭最全，去钟山方便。350–500/晚</li>
+        </ul>
+        <p><strong>酒店：</strong>全季 / 亚朵 / 桔子 / 汉庭优佳，评分 4.7+，距地铁口 ≤300 米。</p>
+        <p><strong>不建议：</strong>夫子庙主街正上方（吵、贵）；南京南站（每天多 20 分钟地铁）。</p>
+        <p><strong>地图搜：</strong>「大行宫地铁站」「科巷」「常府街」</p>
+      </div>
+    </section>
+
+    <section class="block" data-section="booking">
+      <div class="block-head">
+        <h3>🎫 预约闹钟</h3>
+        <button type="button" class="copy-section" data-copy-section="booking">复制本节</button>
+      </div>
+      <div class="block-body editable" data-key="booking" contenteditable="false">
+        <table>
+          <thead>
+            <tr><th>景点</th><th>渠道</th><th>放票</th><th>建议时段</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>南京博物院</td><td>公众号「南京博物院」</td><td>提前7天 18:00</td><td>下午场 12:00–16:00</td></tr>
+            <tr><td>中山陵</td><td>「南京钟山风景区」</td><td>提前7天 16:00</td><td>8:30–10:00 早场</td></tr>
+            <tr><td>总统府</td><td>「南京总统府」</td><td>提前购票</td><td>下午 14:00 后</td></tr>
+          </tbody>
+        </table>
+        <p><strong>例：10/3 入园 → 9/26 18:00 抢南博，9/26 16:00 抢中山陵。</strong></p>
+        <p>⚠️ 南博周一闭馆。支付宝搜「南京地铁电子卡」开通乘车码。</p>
+      </div>
+    </section>
+
+    <section class="block" data-section="itinerary">
+      <div class="block-head">
+        <h3>🗓 四日行程</h3>
+        <button type="button" class="copy-section" data-copy-section="itinerary">复制本节</button>
+      </div>
+      <div class="block-body editable" data-key="itinerary" contenteditable="false">
+        <div class="day-card">
+          <div class="day-title">Day 1 · 抵达 + 老门东（约 8000 步）</div>
+          <ul>
+            <li>中午–下午：南京南 → 3号线 → 大行宫站 3号口，入住休息</li>
+            <li>17:00–19:30：老门东逛吃（蓝老大糖粥、蒋有记锅贴）</li>
+            <li>19:30 回酒店早睡；<strong>不硬挤夫子庙画舫</strong>（国庆排队久）</li>
+          </ul>
+        </div>
+        <div class="day-card">
+          <div class="day-title">Day 2 · 钟山半日（约 10000 步）</div>
+          <ul>
+            <li>08:30：2号线 → 苜蓿园站 1号口</li>
+            <li>买观光车 <strong>30元当日不限次</strong></li>
+            <li>09:30–11:30：中山陵 + 音乐台</li>
+            <li>可选：美龄宫或明孝陵门口拍照即走</li>
+            <li>15:00 前回酒店午睡；18:30 科巷晚餐（皮肚面、藕夹）</li>
+          </ul>
+        </div>
+        <div class="day-card">
+          <div class="day-title">Day 3 · 南博 + 总统府（约 9000 步）</div>
+          <ul>
+            <li>11:00–14:30：2号线 明故宫站 1号口 → 南京博物院（历史馆→民国馆→特展馆）</li>
+            <li>15:30–17:30：大行宫站步行 5 分钟 → 总统府</li>
+            <li>晚上：1912 街区晚餐，或提前网购画舫票（可选）</li>
+          </ul>
+        </div>
+        <div class="day-card">
+          <div class="day-title">Day 4 · 鸡鸣寺 + 玄武湖 + 返程（约 9000 步）</div>
+          <ul>
+            <li>08:30：3号线 → 鸡鸣寺站 5号口</li>
+            <li>10:00：玄武湖解放门进，环湖平路一段</li>
+            <li>可选：台城城墙 30元；不建议去牛首山（太远太累）</li>
+            <li>下午：3号线 → 南京南返程</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" data-section="metro">
+      <div class="block-head">
+        <h3>🚇 地铁速查</h3>
+        <button type="button" class="copy-section" data-copy-section="metro">复制本节</button>
+      </div>
+      <div class="block-body">
+        <pre class="route editable" data-key="metro" contenteditable="false">大行宫（住宿）──3号线1站──► 夫子庙/老门东
+大行宫 ──2号线1站──► 明故宫（南博）
+大行宫 ──2号线──► 苜蓿园（钟山）
+大行宫 ──3号线2站──► 鸡鸣寺（玄武湖）
+南京南 ──3号线──► 大行宫（约20分钟）
+机场 ──S1线──► 南京南（约35分钟）</pre>
+      </div>
+    </section>
+
+    <section class="block" data-section="tips">
+      <div class="block-head">
+        <h3>✅ 轻松避坑</h3>
+        <button type="button" class="copy-section" data-copy-section="tips">复制本节</button>
+      </div>
+      <div class="block-body editable" data-key="tips" contenteditable="false">
+        <ol>
+          <li>每天只排 1 个重景点，下午留 2 小时回酒店躺平</li>
+          <li>别去牛首山；画舫不预约就跳过</li>
+          <li>吃饭错峰：11:00 前或 13:30 后</li>
+          <li>中山陵、南博约早/约晚，中间时段最挤</li>
+          <li>夫子庙主街可不去，老门东体验更好</li>
+          <li>钟山买 30 元观光车通票，别纯走路</li>
+          <li>别在夫子庙主街买特产；别信低价游船拉客</li>
+          <li>带身份证，预约按时段进馆</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="block" data-section="food">
+      <div class="block-head">
+        <h3>🍜 美食地图</h3>
+        <button type="button" class="copy-section" data-copy-section="food">复制本节</button>
+      </div>
+      <div class="block-body editable" data-key="food" contenteditable="false">
+        <ul>
+          <li><strong>老门东：</strong>糖芋苗、梅花糕、蒋有记锅贴</li>
+          <li><strong>科巷（大行宫）：</strong>皮肚面、藕夹、鸡蛋灌饼</li>
+          <li><strong>必试：</strong>鸭血粉丝汤、盐水鸭、牛肉锅贴、赤豆元宵</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block" data-section="notes">
+      <div class="block-head">
+        <h3>📝 我的备注（自由编辑）</h3>
+        <button type="button" class="copy-section" data-copy-section="notes">复制本节</button>
+      </div>
+      <div class="block-body editable" data-key="notes" contenteditable="false">
+        <p>出发日期：10月__日 – 10月__日</p>
+        <p>人数：__ 人 · 总预算：____ 元</p>
+        <p>去程车次/航班：________________</p>
+        <p>返程车次/航班：________________</p>
+        <p>酒店名称：________________ · 电话：________________</p>
+        <p>其他备忘：</p>
+        <p><br></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="toolbar">
+    <button type="button" class="btn" id="btnEdit" aria-pressed="false">✏️ 编辑</button>
+    <button type="button" class="btn primary" id="btnCopyAll">📋 复制全部</button>
+    <button type="button" class="btn" id="btnSave">💾 保存</button>
+    <button type="button" class="btn danger" id="btnReset">↺ 重置</button>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORAGE_KEY = 'nanjing-travel-guide-v1';
+    const editBtn = document.getElementById('btnEdit');
+    const copyAllBtn = document.getElementById('btnCopyAll');
+    const saveBtn = document.getElementById('btnSave');
+    const resetBtn = document.getElementById('btnReset');
+    const toast = document.getElementById('toast');
+    const editables = () => document.querySelectorAll('.editable[data-key]');
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function setEditMode(on) {
+      document.body.classList.toggle('editing', on);
+      editBtn.classList.toggle('active', on);
+      editBtn.setAttribute('aria-pressed', String(on));
+      editBtn.textContent = on ? '✅ 完成' : '✏️ 编辑';
+      editables().forEach((el) => {
+        el.contentEditable = on ? 'true' : 'false';
+      });
+    }
+
+    function collectData() {
+      const data = {};
+      editables().forEach((el) => {
+        data[el.dataset.key] = el.innerHTML;
+      });
+      return data;
+    }
+
+    function applyData(data) {
+      editables().forEach((el) => {
+        if (data[el.dataset.key] != null) {
+          el.innerHTML = data[el.dataset.key];
+        }
+      });
+    }
+
+    function nodeToText(node) {
+      if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+      if (node.nodeName === 'BR') return '\n';
+      if (node.nodeName === 'LI') return '• ' + [...node.childNodes].map(nodeToText).join('').trim() + '\n';
+      if (node.nodeName === 'TR') {
+        const cells = [...node.querySelectorAll('th,td')].map((c) => c.textContent.trim());
+        return cells.join('\t') + '\n';
+      }
+      if (node.nodeName === 'P') return [...node.childNodes].map(nodeToText).join('').trim() + '\n\n';
+      if (node.nodeName === 'PRE') return node.textContent.trim() + '\n\n';
+      return [...node.childNodes].map(nodeToText).join('');
+    }
+
+    function sectionPlainText(sectionId) {
+      const section = document.querySelector(`[data-section="${sectionId}"]`);
+      if (!section) return '';
+      const title = section.querySelector('.block-head h3')?.textContent.trim() || '';
+      const body = section.querySelector('.block-body');
+      return `${title}\n${'─'.repeat(Math.min(title.length, 20))}\n${nodeToText(body).trim()}\n`;
+    }
+
+    function allPlainText() {
+      const title = document.querySelector('[data-key="title"]')?.textContent.trim() || '南京四日游攻略';
+      const summary = document.querySelector('[data-key="summary"]')?.textContent.trim() || '';
+      const sections = ['budget', 'hotel', 'booking', 'itinerary', 'metro', 'tips', 'food', 'notes'];
+      const parts = [`${title}\n${summary}\n`, ...sections.map(sectionPlainText)];
+      return parts.join('\n').trim();
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('已复制到剪贴板');
+        return true;
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast(ok ? '已复制到剪贴板' : '复制失败，请手动选择');
+        return ok;
+      }
+    }
+
+    function saveLocal() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(collectData()));
+      showToast('已保存到本机浏览器');
+    }
+
+    function loadLocal() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) applyData(JSON.parse(raw));
+      } catch { /* ignore */ }
+    }
+
+    function resetAll() {
+      if (!confirm('确定恢复默认内容？本地修改将丢失。')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+
+    editBtn.addEventListener('click', () => {
+      const next = !document.body.classList.contains('editing');
+      setEditMode(next);
+      if (!next) saveLocal();
+    });
+
+    copyAllBtn.addEventListener('click', () => copyText(allPlainText()));
+
+    saveBtn.addEventListener('click', saveLocal);
+
+    resetBtn.addEventListener('click', resetAll);
+
+    document.querySelectorAll('.copy-section').forEach((btn) => {
+      btn.addEventListener('click', () => copyText(sectionPlainText(btn.dataset.copySection)));
+    });
+
+    editables().forEach((el) => {
+      el.addEventListener('blur', () => {
+        if (document.body.classList.contains('editing')) saveLocal();
+      });
+    });
+
+    loadLocal();
+    setEditMode(false);
+  </script>
+</body>
+</html>
